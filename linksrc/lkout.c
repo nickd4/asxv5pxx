@@ -321,6 +321,20 @@ int i;
 		if (sp && (sp->s_axp->a_bap->a_ofp == ofp)) {
 			symadr = symval(sp);
 			lo_addr = symadr & 0xffff;
+#if 1 // output start linear address only, and put in data field not address
+			hi_addr = (symadr >> 16) & 0xffff;
+			chksum =  0x04;
+			chksum += lo_addr;
+			chksum += lo_addr >> 8;
+			chksum += hi_addr;
+			chksum += hi_addr >> 8;
+			chksum += 0x05;
+#ifdef	LONGINT
+			fprintf(ofp, ":04000005%04lX%04lX%02lX\n", hi_addr, lo_addr, (~chksum + 1) & 0x00ff);
+#else
+			fprintf(ofp, ":04000005%04X%04X%02X\n", hi_addr, lo_addr, (~chksum + 1) & 0x00ff);
+#endif
+#else
 			if (a_bytes > 2) {
 				hi_addr = (symadr >> 16) & 0xffff;
 				chksum =  0x00;
@@ -346,6 +360,7 @@ int i;
 			fprintf(ofp, ":00%04lX%02lX%02lX\n", lo_addr, j, (~chksum + 1) & 0x00ff);
 #else
 			fprintf(ofp, ":00%04X%02X%02X\n", lo_addr, j, (~chksum + 1) & 0x00ff);
+#endif
 #endif
 		}
 
@@ -436,6 +451,17 @@ iflush()
 	if (a_bytes > 2) {
 		hi_addr = (rtadr2 >> 16) & 0xffff;
 		if ((hi_addr != (rtadr1 >> 16)) || rtaflg) {
+#if 1 // put in data field not address
+			chksum =  0x02;
+			chksum += hi_addr;
+			chksum += hi_addr >> 8;
+			chksum += 0x04;
+#ifdef	LONGINT
+			fprintf(ofp, ":02000004%04lX%02lX\n", hi_addr, (~chksum + 1) & 0x00ff);
+#else
+			fprintf(ofp, ":02000004%04X%02X\n", hi_addr, (~chksum + 1) & 0x00ff);
+#endif
+#else
 			chksum =  0x00;
 			chksum += hi_addr;
 			chksum += hi_addr >> 8;
@@ -444,6 +470,7 @@ iflush()
 			fprintf(ofp, ":00%04lX04%02lX\n", hi_addr, (~chksum + 1) & 0x00ff);
 #else
 			fprintf(ofp, ":00%04X04%02X\n", hi_addr, (~chksum + 1) & 0x00ff);
+#endif
 #endif
 		}
 	}
