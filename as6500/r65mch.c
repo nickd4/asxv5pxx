@@ -697,4 +697,7 @@ minit()
 	r65f11 = 0;
 	r65c00 = 0;
 	r65c02 = 0;
+
+	/* Nick experimental */
+	exprmasks(3);
 }
