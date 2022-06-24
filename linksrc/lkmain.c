@@ -199,10 +199,15 @@ char *argv[];
 				 */
 				case 'i':
 				case 'I':
-					if (argv[i][++k] == '1') {
+					switch (argv[i][++k]) {
+					case '1':
+					case 'l':
+					case 'L':
 						sprintf(ip+2, "%c", argv[i][k]);
-					} else {
+						break;
+					default:
 						--k;
+						break;
 					}
 					break;
 
@@ -867,10 +872,17 @@ parse()
 				case 'i':
 				case 'I':
 					oflag = 1;
-					if ((c=get()) == '1') {
+					switch (c=get()) {
+					case '1':
 						o1flag = 1;
-					} else {
+						break;
+					case 'l':
+					case 'L':
+						olflag = 1;
+						break;
+					default:
 						unget(c);
+						break;
 					}
 					break;
 

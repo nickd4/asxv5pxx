@@ -966,6 +966,9 @@ extern	int	oflag;		/*	Output file type flag
 extern	int	o1flag;		/*	Output legacy Intel Hex flag
 				 *	Start address record type set to 1 
 				 */
+extern	int	olflag;		/*	Output linear Intel Hex flag
+				 *	Start/extended linear address in data field
+				 */
 extern	int	objflg;		/*	Linked file/library object output flag
 				 */
 

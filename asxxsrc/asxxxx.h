@@ -1055,6 +1055,8 @@ extern	int	yflag;		/*	-y, enable SDCC Debug Symbols
 
 extern	int	zflag;		/*	-z, disable symbol case sensitivity
 				 */
+extern	int	bytesflag;	/*	-234, increase address length to at least n
+				 */
 extern	int	a_bytes;	/*	REL file T Line address length
 				 */
 extern	a_uint	a_mask;		/*	Address Mask

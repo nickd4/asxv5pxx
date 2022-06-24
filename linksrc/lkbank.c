@@ -537,7 +537,7 @@ lkfopen()
 					default:
 					case 2: frmt = "ihx"; break;
 					case 3:
-					case 4: frmt = "i86"; break;
+					case 4: frmt = olflag ? "ihx" : "i86"; break;
 					}
 					fp = afile(bp->b_fspec, frmt, 1);
 				} else

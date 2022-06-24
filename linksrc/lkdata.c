@@ -63,8 +63,11 @@ char	rb[NINPUT];	/*	LST file text line being
 			 */
 int	oflag;		/*	Output file type flag
 			 */
-int	o1flag;		/*	Legacy Intel Hex flag
+int	o1flag;		/*	Output legacy Intel Hex flag
 			 *	Start address record type set to 1 
+			 */
+int	olflag;		/*	Output linear Intel Hex flag
+			 *	Start/extended linear address in data field
 			 */
 int	objflg;		/*	Linked file/library object output flag
 			 */

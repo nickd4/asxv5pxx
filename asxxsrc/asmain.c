@@ -313,6 +313,7 @@ char *argv[];
 				 * Assembly Processing Options:",
 				 *   -i   Insert assembler line before input file(s)
 				 *   -v   Enable out of range signed / unsigned errors
+				 *   -234 Increase address length to at least n
 				 */
 				case 'i':
 				case 'I':
@@ -325,6 +326,12 @@ char *argv[];
 				case 'v':
 				case 'V':
 					++vflag;
+					break;
+
+				case '2':
+				case '3':
+				case '4':
+					bytesflag = c - '0';
 					break;
 
 				/*
@@ -511,6 +518,8 @@ char *argv[];
 		symp = &dot;
 		mcrinit();
 		minit();
+		if (bytesflag > a_bytes)
+			exprmasks(bytesflag);
 		while ((i = nxtline()) != 0) {
 			cp = cb;
 			cpt = cbt;
@@ -2882,6 +2891,9 @@ char *usetxt[] = {
 	"Assembly:",
 	"  -i   Insert assembler line before input file(s)",
 	"  -v   Enable out of range signed / unsigned errors",
+        "  -2   Increase address length to at least 16-bit",
+        "  -3   Increase address length to at least 24-bit",
+        "  -4   Increase address length to at least 32-bit",
 	"Symbols:",
 	"  -a   All user symbols made global",
 	"  -g   Undefined symbols made global",
