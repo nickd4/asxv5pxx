@@ -1,0 +1,23 @@
+2024_04_28 Version 5.50 Update 1
+
+   An update is performed by merging the update directories
+   with the asxv5pxx directories.  New files will be added
+   and changed files will be replaced.
+
+     1) movem error in as68k assembler fixed.
+
+     2) Added missing bls.s and beq.s mnemonics and
+        added blos (same as bls) and bhis (same as bhs)
+        instructions to as68k and as68cf assemblers.
+
+     3) Added dbhis (same as dbhs) and dblos (same
+        as dbls) forms to as68k and as68cf assemblers.
+
+     4) Added shis (same as shs) and slos (same as sls)
+        forms to as68k and as68cf assemblers.
+
+     5) Test files for the AS68K and AS68CF
+        assemblers are updated.
+
+   You must recompile the AS68K and AS68CF
+   assemblers to incorporate the update. 
