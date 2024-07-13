@@ -41,6 +41,9 @@ cd ..\..\..\
 cd asxmak\vs19\build
 call _prep.bat
 cd ..\..\..\
+cd asxmak\vs22\build
+call _prep.bat
+cd ..\..\..\
 cd asxmak\watcom\build
 call _prep.bat
 cd ..\..\..\

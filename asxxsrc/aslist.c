@@ -231,6 +231,14 @@ list()
 	}
 
 	/*
+	 * Extra Cycle Digits
+	 */
+	if (cycldgts <= 2) { cycldgts = 2; } else
+	if (cycldgts >= 4) { cycldgts = 4; } else {
+		cycldgts = 3;
+	}
+
+	/*
 	 * Paging Control
 	 */
 	paging = !pflag && ((lnlist & LIST_PAG) || (uflag == 1)) ? 1 : 0;
@@ -272,7 +280,7 @@ list()
 		listing |= LIST_ASM;
 	} else {
 		/*
-		 * In a MACRO test for LIST_ME and LIST_MEB overrides
+		 * In a MACRO test for LIST_ME, LIST_MEB, and LIST_MEL overrides
 		 */
 		switch (lmode) {
 		case SLIST:
@@ -282,19 +290,26 @@ list()
 		case ELIST:
 			if (asmc->objtyp == T_MACRO) {
 				/* Priority 1
-				 * LIST_ME - Enables listing
+				 * LIST_MEL - Location and Binary
+				 *            With Listing Mode
 				 */
-				if (listing & LIST_ME) {
-					;
+				if (listing & LIST_MEL) {
+					listing |= (LIST_LOC | LIST_BIN);
 				} else
 				/* Priority 2
-				 * LIST_MEB - Location and Binary only listing
+				 * LIST_MEB - Location and Binary Only
 				 */
 				if (listing & LIST_MEB) {
 					listing &= ~LIST_ASM;
 					listing |= (LIST_LOC | LIST_BIN);
-				} else {
+				} else 
 				/* Priority 3
+				 * LIST_ME - Enables Listing Mode
+				 */
+				if (listing & LIST_ME) {
+					;
+				} else {
+				/* Priority 4
 				 * Default - Listing inhibited
 				 */
 					listing = LIST_NONE;
@@ -304,6 +319,7 @@ list()
 					return;
 				}
 			}
+			listing &= LIST_NORM;
 			break;
 	
 		default:
@@ -480,7 +496,7 @@ list()
 				/*
 				 * If we list cycles decrease maximum bytes on this line.
 				 */
-				nl = (!cflag && !(opcycles & OPCY_NONE) && (listing & LIST_CYC)) ? (n-1) : n;
+				nl = (!cflag && !(opcycles & CYCL_NONE) && (listing & LIST_CYC)) ? (n-1) : n;
 				nl = (nb > nl) ? nl : nb;
 	 			list1(wp, wpt, nl);
 				wp += nl;
@@ -573,7 +589,7 @@ list()
 	 * LIST_CYC - Output opcode cycle count with listing.
 	 */
 	if (listing & LIST_CYC) {
-		if (!cflag && !(opcycles & OPCY_NONE)) {
+		if (!cflag && !(opcycles & CYCL_NONE)) {
 			switch(lmode) {
 			default:
 			case SLIST:
@@ -593,8 +609,14 @@ list()
 					fprintf(lfp, " ");
 				}
 				op = a;
-				fprintf(lfp, "%c%2d%c", CYCNT_BGN, opcycles, CYCNT_END);
-				op += b;
+				switch(cycldgts) {
+				default:
+				case 2:	frmt = "%c%2d%c";	break;
+				case 3:	frmt = "%c%3d%c";	break;
+				case 4:	frmt = "%c%4d%c";	break;
+				}
+				fprintf(lfp, frmt, CYCNT_BGN, opcycles, CYCNT_END);
+				op += b + (cycldgts - 2);
 				break;
 			}
 		}
@@ -619,6 +641,7 @@ list()
 			case 3:
 			case 4: a = 34; b = 5; break;
 			}
+			a += (cycldgts - 2);
 			for (i=0; i<(a-op); i++) {
 				fprintf(lfp, " ");
 			}
@@ -648,6 +671,7 @@ list()
 			case 3:
 			case 4: a = 40; break;
 			}
+			a += (cycldgts - 2);
 			for (i=0; i<(a-op); i++) {
 				fprintf(lfp, " ");
 			}
@@ -736,7 +760,7 @@ list()
 	}
 }
 
-/*)Function	VOID	list1(wp, wpt, n)
+/*)Function	VOID	list1(wp, wpt, nb)
  *
  *		int	nb		number of bytes listed per line
  *		int *	wp		pointer to data bytes

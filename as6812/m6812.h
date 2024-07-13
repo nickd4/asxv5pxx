@@ -106,10 +106,15 @@
  * Set Direct Pointer
  */
 #define	S_SDP		80
-#define	S_CPU		81
+#define	S_PGD		81
 
 /*
- * Processor Type
+ * CPU Option
+ */
+#define	S_CPU		82
+
+/*
+ * Processor Type (S_CPU)
  */
 #define	X_HC12		0
 #define X_HCS12		1
@@ -170,7 +175,7 @@ extern	VOID		movout(struct expr *esp, int indx, int offset);
 extern	VOID		m68out(int i);
 extern	int		setbit(int b);
 extern	int		getbit(void);
-extern	int		mchpcr(struct expr *esp);
+extern	int		mchpcr(struct expr *esp, int *v, int n);
 extern	VOID		minit(void);
 
 #else

@@ -65,7 +65,8 @@ struct adsym
  * Machine Extensions
  */
 #define	S_SDP		30
-#define	S_M740		31
+#define	S_PGD		31
+#define	S_M740		32
 
 /*
  * Addressing types
@@ -128,7 +129,7 @@ extern	int		zpage(struct expr *esp);
 	/* m74mch.c */
 extern	struct  area	*zpg;
 extern	VOID		machine(struct mne *mp);
-extern	int		mchpcr(struct expr *esp);
+extern	int		mchpcr(struct expr *esp, int *v, int n);
 extern	VOID		minit(void);
 extern	VOID		genbad(struct expr *esp);
 

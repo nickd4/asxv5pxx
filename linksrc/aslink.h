@@ -1,7 +1,7 @@
 /* aslink.h */
 
 /*
- *  Copyright (C) 1989-2021  Alan R. Baldwin
+ *  Copyright (C) 1989-2022  Alan R. Baldwin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -39,8 +39,8 @@
  * Local Definitions
  */
 
-#define	VERSION "V05.40"
-#define	COPYRIGHT "2021"
+#define	VERSION "V05.50"
+#define	COPYRIGHT "2022"
 
 /*
  * To include NoICE Debugging set non-zero
@@ -188,7 +188,7 @@
  */
 #define	ER_NONE		0	/* No error */
 #define	ER_WARNING	1	/* Warning */
-#define	ER_ERROR	2	/* Assembly error */
+#define	ER_ERROR	2	/* Assembly/Linker error */
 #define	ER_FATAL	3	/* Fatal error */
 
 /*
@@ -205,7 +205,7 @@
 #define		IXXMAXBYTES	32	/* NMAX > (2 * IXXMAXBYTES) */
 #define		SXXMAXBYTES	32	/* NMAX > (2 * SXXMAXBYTES) */
 #define		DBXMAXBYTES	64	/* NMAX > (  DBXMAXBYTES  ) */
-#define	FILSPC		80	/* File spec length */
+#define	FILSPC		256	/* File spec length */
 
 /*
  * NTXT must be defined to have the same value in
@@ -594,12 +594,12 @@ struct	bank
  *	area definition found as the REL files are read.  The
  *	struct area contains the name of the area, a flag byte
  *	which contains the area attributes (REL/CON/OVR/ABS),
- *	the area base address set flag byte (-b option), and the
+ *	the area base address set flag byte (-a option), and the
  *	area base address and total size which will be filled
  *	in at the end of the first pass through the REL files.
  *	The area structure also contains a link to the bank
  *	this area is a part of and a data output file handle
- *	pointer which is loaded from from the bank structure.
+ *	pointer which is loaded from the bank structure.
  *	As A directives are read from the REL files a linked
  *	list of unique area structures is created by placing a
  *	link to the new area structure in the previous area structure.
@@ -683,13 +683,13 @@ struct	lfile
 
 /*
  *	The struct base contains a pointer to a
- *	base definition string and a link to the next
- *	base structure.
+ *	base definition string and a link to
+ *	the next base structure.
  */
 struct	base
 {
-	struct	base  *b_base;	/* Base link */
-	char	      *b_strp;	/* String pointer */
+	struct	base  *link;	/* Base Link */
+	char	      *strp;	/* Base String pointer */
 };
 
 /*
@@ -912,11 +912,17 @@ extern	struct	areax	*axp;	/*	Pointer to the current
 extern	struct	sym *symhash[NHASH]; /*	array of pointers to NHASH
 				      *	linked symbol lists
 				      */
-extern	struct	base	*basep;	/*	The pointer to the first
-				 *	base structure
+extern	struct	base  *a_basep;	/*	The pointer to the first
+				 *	area base structure
 				 */
-extern	struct	base	*bsp;	/*	Pointer to the current
-				 *	base structure
+extern	struct	base  *a_bsp;	/*	Pointer to the current
+				 *	area base structure
+				 */
+extern	struct	base  *b_basep;	/*	The pointer to the first
+				 *	bank base structure
+				 */
+extern	struct	base  *b_bsp;	/*	Pointer to the current
+				 *	bank base structure
 				 */
 extern	struct	globl	*globlp;/*	The pointer to the first
 				 *	globl structure
@@ -963,8 +969,9 @@ extern	FILE	*yfp;		/*	SDCDB output file handle
 
 extern	int	oflag;		/*	Output file type flag
 				 */
-extern	int	o1flag;		/*	Output legacy Intel Hex flag
-				 *	Start address record type set to 1 
+extern	char	*outnam;	/*	Pointer to -o+ output file name
+				 */
+extern	char	*outext;	/*	Pointer to -o+ output file extension
 				 */
 extern	int	objflg;		/*	Linked file/library object output flag
 				 */
@@ -1103,10 +1110,12 @@ extern	VOID		exit(int n);
 
 /* lkmain.c */
 extern	FILE *		afile(char *fn, char *ft, int wf);
-extern	VOID		bassav(void);
+extern	VOID		areasav(void);
+extern	VOID		banksav(void);
+extern	char *		filespec(char *p);
 extern	int		fndidx(char *str);
 extern	int		fndext(char *str);
-extern	VOID		gblsav(void);
+extern	VOID		glblsav(void);
 extern	int		intsiz(void);
 extern	VOID		link(void);
 extern	VOID		lkexit(int i);
@@ -1281,10 +1290,12 @@ extern	VOID		exit();
 
 /* lkmain.c */
 extern	FILE *		afile();
-extern	VOID		bassav();
+extern	VOID		areasav();
+extern	VOID		banksav();
+extern	char *		filespec();
 extern	int		fndext();
 extern	int		fndidx();
-extern	VOID		gblsav();
+extern	VOID		glblsav();
 extern	int		intsiz();
 extern	VOID		link();
 extern	VOID		lkexit();

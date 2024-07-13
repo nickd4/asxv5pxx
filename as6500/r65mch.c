@@ -1,7 +1,7 @@
 /* r65mch.c */
 
 /*
- *  Copyright (C) 1995-2019  Alan R. Baldwin
+ *  Copyright (C) 1995-2023  Alan R. Baldwin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -55,8 +55,8 @@ int r65c02;
 #define	OPCY_65C00	((char) (0xFB))
 #define	OPCY_65C02	((char) (0xFA))
 
-/*	OPCY_NONE	((char) (0x80))	*/
-/*	OPCY_MASK	((char) (0x7F))	*/
+#define	OPCY_NONE	((char) (0x80))
+#define	OPCY_MASK	((char) (0x7F))
 
 #define	UN	((char) (OPCY_NONE | 0x00))
 
@@ -151,6 +151,9 @@ static char c02pg1[256] = {
 
 struct area *zpg;
 
+int autodpcnst;
+int autodpsmbl;
+
 /*
  * Process a machine op.
  */
@@ -160,8 +163,15 @@ struct mne *mp;
 {
 	int op, t1;
 	struct expr e1,e2;
+	struct sym *sp;
 	char id[NCPS];
 	int c, v1, v2;
+
+	/*
+	 * Using Internal Format
+	 * For Cycle Counting
+	 */
+	opcycles = OPCY_NONE;
 
 	clrexpr(&e1);
 	clrexpr(&e2);
@@ -175,6 +185,7 @@ struct mne *mp;
 			expr(&e1, 0);
 			if (e1.e_flag == 0 && e1.e_base.e_ap == NULL) {
 				if (e1.e_addr) {
+					e1.e_addr = 0;
 					xerr('b', "Only Page 0 Allowed.");
 				}
 			}
@@ -182,6 +193,7 @@ struct mne *mp;
 				getid(id, -1);
 				zpg = alookup(id);
 				if (zpg == NULL) {
+					zpg = dot.s_area;
 					xerr('u', "Undefined Area.");
 				}
 			} else {
@@ -192,6 +204,17 @@ struct mne *mp;
 		lmode = SLIST;
 		break;
 
+	case S_PGD:
+		do {
+			getid(id, -1);
+			sp = lookup(id);
+			sp->s_flag &= ~S_LCL;
+			sp->s_flag |=  S_GBL;
+			sp->s_area = (zpg != NULL) ? zpg : dot.s_area;
+ 		} while (comma(0));
+		lmode = SLIST;
+		break;
+ 
 	case S_R6500:
 		opcycles = OPCY_6500;
 		r65f11 = 0;
@@ -248,8 +271,7 @@ struct mne *mp;
 	case S_BRA1:
 		expr(&e1, 0);
 		outab(op);
-		if (mchpcr(&e1)) {
-			v1 = (int) (e1.e_addr - dot.s_addr - 1);
+		if (mchpcr(&e1, &v1, 1)) {
 			if ((v1 < -128) || (v1 > 127))
 				aerr();
 			outab(v1);
@@ -304,6 +326,7 @@ struct mne *mp;
 
 	case S_DOP:
 		t1 = addr(&e1);
+		v1 = (int) e1.e_addr;
 		switch (t1) {
 		case S_IPREX:
 			outab(op + 0x01);
@@ -489,8 +512,13 @@ struct mne *mp;
 			outrb(&e1, R_PAG0);
 			break;
 		case S_INDY:
-			outab(op + 0x1E);
-			outrw(&e1, 0);
+			if (op == 0x80) {
+				outab(op + 0x16);
+				outrb(&e1, R_PAG0);
+			} else {
+				outab(op + 0x1E);
+				outrw(&e1, 0);
+			}
 			break;
 		default:
 			outab(op + 0x06);
@@ -522,8 +550,13 @@ struct mne *mp;
 			outrb(&e1, R_PAG0);
 			break;
 		case S_INDX:
-			outab(op + 0x1C);
-			outrw(&e1, 0);
+			if (op == 0x80) {
+				outab(op + 0x14);
+				outrb(&e1, R_PAG0);
+			} else {
+				outab(op + 0x1C);
+				outrw(&e1, 0);
+			}
 			break;
 		default:
 			outab(op + 0x04);
@@ -546,8 +579,7 @@ struct mne *mp;
 		expr(&e2, 0);
 		outab(op);
 		outrb(&e1, R_PAG0);
-		if (mchpcr(&e2)) {
-			v2 = (int) (e2.e_addr - dot.s_addr - 1);
+		if (mchpcr(&e2, &v2, 1)) {
 			if ((v2 < -128) || (v2 > 127))
 				aerr();
 			outab(v2);
@@ -582,13 +614,13 @@ struct mne *mp;
 			outab(op + 0x04);
 			outrb(&e1, R_PAG0);
 			break;
-		case S_DINDX:
-			outab(op + 0x14);
-			outrb(&e1, R_PAG0);
-			break;
 		case S_EXT:
 			outab(op + 0x3C);
 			outrw(&e1, 0);
+			break;
+		case S_DINDX:
+			outab(op + 0x14);
+			outrb(&e1, R_PAG0);
 			break;
 		case S_INDX:
 			outab(op + 0x3E);
@@ -647,16 +679,39 @@ struct mne *mp;
 			opcycles = r65pg1[cb[0] & 0xFF];
 		}
 	}
+ 	/*
+	 * Translate To External Format
+	 */
+	if (opcycles == OPCY_NONE) { opcycles  =  CYCL_NONE; } else
+	if (opcycles  & OPCY_NONE) { opcycles |= (CYCL_NONE | 0x3F00); }
 }
 
 /*
  * Branch/Jump PCR Mode Check
  */
 int
-mchpcr(esp)
+mchpcr(esp, v, n)
 struct expr *esp;
+int *v;
+int n;
 {
 	if (esp->e_base.e_ap == dot.s_area) {
+		if (v != NULL) {
+#if 1
+			/* Allows branching from top-to-bottom and bottom-to-top */
+ 			*v = (int) (esp->e_addr - dot.s_addr - n);
+			/* only bits 'a_mask' are significant, make circular */
+			if (*v & s_mask) {
+				*v |= (int) ~a_mask;
+			}
+			else {
+				*v &= (int) a_mask;
+			}
+#else
+			/* Disallows branching from top-to-bottom and bottom-to-top */
+			*v = (int) ((esp->e_addr & a_mask) - (dot.s_addr & a_mask) - n);
+#endif
+		}
 		return(1);
 	}
 	if (esp->e_flag==0 && esp->e_base.e_ap==NULL) {
@@ -672,6 +727,23 @@ struct expr *esp;
 		esp->e_base.e_sp = &sym[1];
 	}
 	return(0);
+}
+
+/*
+ * Machine specific .enable/.dsable terms.
+ */
+int
+mchoptn(id, v)
+char *id;
+int v;
+{
+	/* Automatic Direct Page (Constants) */
+	if (symeq(id, "autodpcnst", 1)) { autodpcnst = v; } else
+	/* Automatic Direct Page (Symbols) */
+	if (symeq(id, "autodpsmbl", 1)) { autodpsmbl = v; } else {
+		return(0);
+	}
+	return(1);
 }
 
 /*
@@ -697,4 +769,15 @@ minit()
 	r65f11 = 0;
 	r65c00 = 0;
 	r65c02 = 0;
+
+	/*
+	 * Automatic Direct Page
+	 */
+	autodpcnst = 1;
+	autodpsmbl = 1;
+	/*
+	 * External Calls
+	 */
+	/* .enabl/.dsabl Extension */
+	mchoptn_ptr = mchoptn;
 }

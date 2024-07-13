@@ -59,7 +59,7 @@
 ;	Under normal operation the mfmbsy events occur only while the
 ;	host controller is initializing. Wrtbck events occur if while
 ;	in a writeback operation an Ex0 Interrupt is serviced. It is
-;	recommended that partion copy operations are not performed
+;	recommended that partition copy operations are not performed
 ;	while the host is actively accessing partitions, this will
 ;	result in mfmcpy events.  Active events signify the normal
 ;	processing of Ex0 interrupts while actively accessing the

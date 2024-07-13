@@ -25,7 +25,8 @@ LNK		= LINK
 DLLS		= 
 
 HEADERS		= C:\SC\INCLUDE\alloc.h ..\..\..\asxxsrc\asxxxx.h C:\SC\INCLUDE\stdlib.h  \
-		C:\SC\INCLUDE\stdio.h C:\SC\INCLUDE\setjmp.h C:\SC\INCLUDE\string.h ..\..\..\AS61860\s61860.h 
+		C:\SC\INCLUDE\stdio.h C:\SC\INCLUDE\setjmp.h C:\SC\INCLUDE\string.h ..\..\..\AS61860\s61860.h  \
+		C:\SC\INCLUDE\time.h 
 
 DEFFILE		= as61860.DEF
 
@@ -56,7 +57,7 @@ CREATETARGETDIR	= if not exist $(TARGETDIR)\*.* md $(TARGETDIR)
 
 LIBS		= 
 
-CFLAGS		=  -A -J -ml -o+time -3 -a2 -c 
+CFLAGS		=  -A -r -J -ml -o+time -3 -a2 -c 
 LFLAGS		=  /DE /PACKF /XN
 DEFINES		= 
 !ENDIF

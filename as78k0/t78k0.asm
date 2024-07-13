@@ -1,5 +1,5 @@
 	.title	AS78K0 Sequential Opcode Test
-
+ 
 	; Notes:
 	;	Absolute addresses (CONSTANTS) will be checked as
 	;	being in the 'saddr' range first and then as being
@@ -12,11 +12,16 @@
 	;
 	;	If the 'sfr' or 'saddr' address is external then the
 	;	user is responsible to ensure the addresses are in the
-	;	proper ranges.  NO ERRORS will be reported by the linker.
+	;	proper ranges.  ERRORS will be reported by the linker
+	;	if the DIRECT PAGE ADDRESS is not specified using the
+	;	.setdp directive.
+
+	.setdp	0xFF00
 
 			; sfr addresses
 	sfrFF00		=	0xFF00
 	sfrFF21		=	0xFF21
+	sfrFF22		=	0xFF22
 
 			; saddr addresses
 	saddrFE20	=	0xFE20
@@ -101,6 +106,7 @@
 	callf	addr11+0x0000			; 0C 65
 	add	a,#byt45			; 0D 45
 	add	a,saddrFE20			; 0E 20
+	add	a,@saddrFE20			; 0E 20
 	add	a,[hl]				; 0F
 
 	movw	ax,#0x1234			; 10 34 12
@@ -236,7 +242,7 @@
 	incw	hl				; 86
 	mov	a,[hl]				; 87
 	add	saddrFF17,#byt23		; 88 17 23
-	movw	ax,saddrFF17			; 89 17
+	movw	ax,saddrFE20			; 89 20
 	movw	ax,sp				; 89 1C
 	dbnz	c,.				; 8A FE
 	dbnz	b,.				; 8B FE
@@ -256,7 +262,7 @@
 	decw	hl				; 96
 	mov	[hl],a				; 97
 	sub	saddrFF17,#byt23		; 98 17 23
-	movw	saddrFF17,ax			; 99 17
+	movw	saddrFE20,ax			; 99 20
 	movw	sp,ax				; 99 1C
 	call	addr16				; 9A 16 E0
 	br	!addr16				; 9B 16 E0
@@ -274,7 +280,7 @@
 	mov	l,#0x89				; A6 89
 	mov	h,#0x89				; A7 89
 	addc	saddrFF17,#byt23		; A8 17 23
-	movw	ax,sfrFF21			; A9 21
+	movw	ax,sfrFF22			; A9 22
 	mov	a,[hl+c]			; AA
 	mov	a,[hl+b]			; AB
 	bt	saddrFE20.bit2,.		; AC 20 FD
@@ -290,8 +296,8 @@
 	push	de				; B5
 	pop	hl				; B6
 	push	hl				; B7
-	subc	saddrFF17,#byt23		; B8 17 23
-	movw	sfrFF21,ax			; B9 21
+	subc	saddrFE20,#byt23		; B8 20 23
+	movw	sfrFF22,ax			; B9 22
 	mov	[hl+c],a			; BA
 	mov	[hl+b],a			; BB
 	bt	saddrFE20.bit3,.		; BC 20 FD
@@ -351,7 +357,7 @@
 	callt	[ind60+10]			; EB
 	bt	saddrFE20.bit6,.		; EC 20 FD
 	callt	[ind60+12]			; ED
-	movw	saddrFF17,#0x7856		; EE 17 56 78
+	movw	saddrFE20,#0x7856		; EE 20 56 78
 	movw	sp,#0x7856			; EE 1C 56 78
 	callt	[ind60+14]			; EF
 
@@ -371,7 +377,7 @@
 	callt	[ind70+10]			; FB
 	bt	saddrFE20.bit7,.		; FC 20 FD
 	callt	[ind70+12]			; FD
-	movw	sfrFF21,#0x3412			; FE 21 12 34
+	movw	sfrFF22,#0x3412			; FE 22 12 34
 	callt	[ind70+14]			; FF
 
 
@@ -1247,7 +1253,11 @@
 	;
 	;	If the 'sfr' or 'saddr' address is external then the
 	;	user is responsible to ensure the addresses are in the
-	;	proper ranges.  NO ERRORS will be reported by the linker.
+	;	proper ranges.  ERRORS will be reported by the linker
+	;	if the DIRECT PAGE ADDRESS is not specified using the
+	;	.setdp directive.
+
+	.setdp	0xFF00
 
 			; sfr addresses
 	.globl	xsfrFF		; =	0xFF00

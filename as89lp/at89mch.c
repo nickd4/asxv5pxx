@@ -1,7 +1,7 @@
 /* at89mch.c */
 
 /*
- *  Copyright (C) 2019-2021  Alan R. Baldwin
+ *  Copyright (C) 2019-2023  Alan R. Baldwin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -35,8 +35,8 @@ char	*dsft	= "asm";
 #define	OPCY_SDP	((char) (0xFF))
 #define	OPCY_ERR	((char) (0xFE))
 
-/*	OPCY_NONE	((char) (0x80))	*/
-/*	OPCY_MASK	((char) (0x7F))	*/
+#define	OPCY_NONE	((char) (0x80))
+#define	OPCY_MASK	((char) (0x7F))
 
 #define	OPCY_CPU	((char) (0xFD))
 
@@ -107,6 +107,12 @@ struct mne *mp;
 	int op;
 	int t1, t2, v1, v2;
 	struct expr e1, e2;
+
+	/*
+	 * Using Internal Format
+	 * For Cycle Counting
+	 */
+	opcycles = OPCY_NONE;
 
 	clrexpr(&e1);
 	clrexpr(&e2);
@@ -679,11 +685,10 @@ struct mne *mp;
 		outab(op);
 		outrb(&e1, R_PAG0);
 
-		if (mchpcr(&e2)) {
-			v1 = (int) (e2.e_addr - dot.s_addr - 1);
-			if ((v1 < -128) || (v1 > 127))
+		if (mchpcr(&e2, &v2, 1)) {
+			if ((v2 < -128) || (v2 > 127))
 				xerr('a', "Short Relative Address Is Out Of Range");
-			outab(v1);
+			outab(v2);
 		} else {
 			outrb(&e2, R_PCR);
 		}
@@ -696,8 +701,7 @@ struct mne *mp;
 		expr(&e1, 0);
 		outab(op);
 
-		if (mchpcr(&e1)) {
-			v1 = (int) (e1.e_addr - dot.s_addr - 1);
+		if (mchpcr(&e1, &v1, 1)) {
 			if ((v1 < -128) || (v1 > 127))
 				xerr('a', "Short Relative Address Is Out Of Range");
 			outab(v1);
@@ -779,8 +783,7 @@ struct mne *mp;
 		}
 
 		/* branch destination */
-		if (mchpcr(&e1)) {
-			v1 = (int) (e1.e_addr - dot.s_addr - 1);
+		if (mchpcr(&e1, &v1, 1)) {
 			if ((v1 < -128) || (v1 > 127))
 				xerr('a', "Short Relative Address Is Out Of Range");
 			outab(v1);
@@ -818,8 +821,7 @@ struct mne *mp;
 		}
 
 		/* branch destination */
-		if (mchpcr(&e2)) {
-			v2 = (int) (e2.e_addr - dot.s_addr - 1);
+		if (mchpcr(&e2, &v2, 1)) {
 			if ((v2 < -128) || (v2 > 127))
 				xerr('a', "Short Relative Address Is Out Of Range");
 			outab(v2);
@@ -1036,16 +1038,39 @@ struct mne *mp;
 			opcycles = Page[opcycles & OPCY_MASK][cb[1] & 0xFF];
 		}
 	}
+ 	/*
+	 * Translate To External Format
+	 */
+	if (opcycles == OPCY_NONE) { opcycles  =  CYCL_NONE; } else
+	if (opcycles  & OPCY_NONE) { opcycles |= (CYCL_NONE | 0x3F00); }
 }
 
 /*
  * Branch/Jump PCR Mode Check
  */
 int
-mchpcr(esp)
+mchpcr(esp, v, n)
 struct expr *esp;
+int *v;
+int n;
 {
 	if (esp->e_base.e_ap == dot.s_area) {
+		if (v != NULL) {
+#if 1
+			/* Allows branching from top-to-bottom and bottom-to-top */
+ 			*v = (int) (esp->e_addr - dot.s_addr - n);
+			/* only bits 'a_mask' are significant, make circular */
+			if (*v & s_mask) {
+				*v |= (int) ~a_mask;
+			}
+			else {
+				*v &= (int) a_mask;
+			}
+#else
+			/* Disallows branching from top-to-bottom and bottom-to-top */
+			*v = (int) ((esp->e_addr & a_mask) - (dot.s_addr & a_mask) - n);
+#endif
+		}
 		return(1);
 	}
 	if (esp->e_flag==0 && esp->e_base.e_ap==NULL) {

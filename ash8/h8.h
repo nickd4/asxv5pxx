@@ -64,7 +64,8 @@
 /*
  * Direct Page (last 256 bytes)
  */
-#define	S_SDP		49
+#define	S_SDP		48
+#define	S_PGD		49
 
 /*
  * H8 Instruction types
@@ -94,8 +95,6 @@
  * Variables
  */
 extern int aindx;
-
-extern char *dpcode[];
 
 struct	sdp
 {
@@ -133,7 +132,7 @@ extern	VOID		normbyte(struct expr *esp);
 extern	VOID		usgnbyte(struct expr *esp);
 extern	VOID		pagebyte(struct expr *esp);
 extern	int		abstype(struct expr *esp);
-extern	int		mchpcr(struct expr *esp);
+extern	int		mchpcr(struct expr *esp, int *v, int n);
 extern	VOID		minit(void);
 extern	int		setbit(int b);
 extern	int		getbit(void);

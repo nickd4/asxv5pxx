@@ -33,14 +33,9 @@ zip -d asxs5pxx.zip asxv5pxx\asxmak\vs10\exe\*.exe
 zip -d asxs5pxx.zip asxv5pxx\asxmak\vs13\exe\*.exe
 zip -d asxs5pxx.zip asxv5pxx\asxmak\vs15\exe\*.exe
 zip -d asxs5pxx.zip asxv5pxx\asxmak\vs19\exe\*.exe
+zip -d asxs5pxx.zip asxv5pxx\asxmak\vs22\exe\*.exe
 zip -d asxs5pxx.zip asxv5pxx\asxmak\watcom\exe\*.exe
 zip -d asxs5pxx.zip asxv5pxx\asxmak\symantec\exe\*.EXE
-zip -T asxs5pxx.zip
-rem
-rem  Remove Pad File
-rem
-zip -d asxs5pxx.zip asxv5pxx\asxv*.xml
-zip -d asxv5pxx.zip asxv5pxx\asxdoc\asxv*.xml
 zip -T asxs5pxx.zip
 rem
 rem  Copy Current readme.txt File To asxv5pxx.txt

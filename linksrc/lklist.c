@@ -765,7 +765,6 @@ ee DDDDDDDDDD ddd ddd ddd ddd [nn]LLLLL *********	DECIMAL(32)
  *	functions called:
  *		a_uint	adb_xb()	lkrloc.c
  *		int	fclose()	c_library
- *		int	fgets()		c_library
  *		int	fprintf()	c_library
  *		VOID	lkalist()	lklist.c
  *		VOID	lklist()	lklist.c
@@ -805,22 +804,24 @@ int i;
 		 */	
 		if (rtcnt == a_bytes) {
 			cpc = pc;
-#if LNK_DEBUG || HLR_DEBUG
-			fprintf(stdout, "lkulist: (A,B) cpc = 0x%X\n", cpc);
-#endif
 			if (hfp == NULL) {
 				lkalist(cpc);
 			} else {
 				hlrlist(cpc, 0, 0);
 			}
+#if LNK_DEBUG || HLR_DEBUG
+			if (hfp == NULL) {
+				fprintf(stdout, "lkulist(A,B): lkalist");
+			} else {
+				fprintf(stdout, "lkulist(A,B): hlrlist");
+			}
+			fprintf(stdout, "(cpc=0x%02X, v=0, err=0)\n", cpc);
+#endif
 		/*
 		 * Line with code bytes
 		 */
 		} else {
 			cpc = pc;
-#if LNK_DEBUG || HLR_DEBUG
-			fprintf(stdout, "lkulist: (N,S,C,E) cpc = 0x%X\n", cpc);
-#endif
 			cbytes = 0;
 			for (i=a_bytes; i < rtcnt; i++) {
 				if (rtflg[i]) {
@@ -829,6 +830,14 @@ int i;
 					} else {
 						hlrlist(cpc, (int) (rtval[i] & 0xFF), rterr[i]);
 					}
+#if LNK_DEBUG || HLR_DEBUG
+					if (hfp == NULL) {
+						fprintf(stdout, "lkulist(N,S,C,E): lklist");
+					} else {
+						fprintf(stdout, "lkulist(N,S,C,E): hlrlist");
+					}
+					fprintf(stdout, "(cpc=0x%02X, rtval[%d]=%02X, rterr[%d]=%d)\n", cpc, i, rtval[i], i, rterr[i]);
+#endif
 					cbytes += 1;
 					cpc += (cbytes % pcb) ? 0 : 1;
 				}
@@ -903,7 +912,6 @@ int i;
  *	functions called:
  *		int	dgt()		lklist.c
  *		int	fclose()	c_library
- *		int	fgets()		c_library
  *		int	fprintf()	c_library
  *		int	sprintf()	c_library
  *		char *	strncpy()	c_library
@@ -1082,7 +1090,6 @@ loop:	if (getlst(1) == 0) {
  *	functions called:
  *		int	dgt()		lklist.c
  *		int	fclose()	c_library
- *		int	fgets()		c_library
  *		int	fprintf()	c_library
  *		int	sprintf()	c_library
  *		char *	strncpy()	c_library
@@ -1306,7 +1313,7 @@ int ngline;
 	 * Get next LST text line
 	 */
 	if (tfp != NULL) {
-		if (fgets(rb, sizeof(rb)-2, tfp) == NULL) {
+		if (fgets(rb, sizeof(rb), tfp) == NULL) {
 			fclose(tfp);
 			tfp = NULL;
 			fclose(rfp);
@@ -1375,7 +1382,6 @@ int ngline;
  *	functions called:
  *		int	dgt()		lklist.c
  *		int	fclose()	c_library
- *		int	fgets()		c_library
  *		VOID	gethlr()	lklist.c
  *		int	fprintf()	c_library
  *		int	sprintf()	c_library
@@ -1422,15 +1428,15 @@ lpLST:	if (gline) {
 	}
 
 #if HLR_DEBUG
+	fprintf(stdout, "hlrlist(cpc=0x%02X, v=0x%02X, err=%d) : ", cpc, v, err);
 	switch(lmode) {
 	default:
-	case NLIST:	fprintf(stdout, "hlrlist: NLIST\n");	break;
-	case SLIST:	fprintf(stdout, "hlrlist: SLIST\n");	break;
-	case ALIST:	fprintf(stdout, "hlrlist: ALIST\n");	break;
-	case BLIST:	fprintf(stdout, "hlrlist: BLIST\n");	break;
-	case CLIST:	fprintf(stdout, "hlrlist: CLIST\n");	break;
-	case ELIST:	fprintf(stdout, "hlrlist: ELIST\n");	break;
-	case ILIST:	fprintf(stdout, "hlrlist: ILIST\n");	break;
+	case NLIST:	fprintf(stdout, "NLIST");	break;
+	case SLIST:	fprintf(stdout, "SLIST");	break;
+	case ALIST:	fprintf(stdout, "ALIST");	break;
+	case BLIST:	fprintf(stdout, "BLIST");	break;
+	case CLIST:	fprintf(stdout, "CLIST");	break;
+	case ELIST:	fprintf(stdout, "ELIST");	break;
 	}
 #endif
 
@@ -1455,7 +1461,6 @@ lpLST:	if (gline) {
 
 	case SLIST:	/* Source Only */
 		if (bytcnt == bgncnt) {
-			lsterr(err);
 			if (listing && !(listing & HLR_NLST)) {
 				fprintf(rfp, "%s", rb);
 #if HLR_DEBUG
@@ -1465,12 +1470,18 @@ lpLST:	if (gline) {
 			if (bytcnt == 0) {
 				setgh();
 			} else {
+				if (listing && !(listing & HLR_NLST)) {
+					if (err) { lsterr(err); }
+				}
 				if ((bytcnt ? --bytcnt : 0) == 0) {
 					setgh();
 				}
 				return;	/* Discard Byte */
 			}
 		} else {
+			if (listing && !(listing & HLR_NLST)) {
+				if (err) { lsterr(err); }
+			}
 			if ((bytcnt ? --bytcnt : 0) == 0) {
 				setgh();
 			}
@@ -1484,7 +1495,6 @@ lpLST:	if (gline) {
 		 * Always called with rtcnt == 2
 		 * ----- bytcnt is ignored -----
 		 */
-		lsterr(err);
 		if (listing && !(listing & HLR_NLST)) {
 			hlralist(cpc);
 			fprintf(rfp, "%s", rb);
@@ -1497,7 +1507,6 @@ lpLST:	if (gline) {
 
 	case CLIST:	/* Code */
 		if (bytcnt == bgncnt) {
-			lsterr(err);
 			if (bytcnt == 0) {
 				if (listing && !(listing & HLR_NLST)) {
 					fprintf(rfp, "%s", rb);
@@ -1509,6 +1518,7 @@ lpLST:	if (gline) {
 			} else {
 				if (listing && !(listing & HLR_NLST)) {
 					hlrclist(cpc,v);
+					if (err) { lsterr(err); }
 				}
 				if ((bytcnt ? --bytcnt : 0) == 0) {
 					if (listing && !(listing & HLR_NLST)) {
@@ -1524,6 +1534,7 @@ lpLST:	if (gline) {
 		} else {
 			if (listing && !(listing & HLR_NLST)) {
 				hlrclist(cpc,v);
+				if (err) { lsterr(err); }
 			}
 			if ((bytcnt ? --bytcnt : 0) == 0) {
 				if (listing && !(listing & HLR_NLST)) {
@@ -1540,7 +1551,6 @@ lpLST:	if (gline) {
 
 	case ELIST:	/* Equate Processing */
 		if (bytcnt == bgncnt) {
-			lsterr(err);
 			if (listing && !(listing & HLR_NLST)) {
 				if (listing & LIST_EQT) {
 					hlrelist();
@@ -1590,58 +1600,34 @@ setgh()
  *
  *		int	cpc		current program counter value
  *
- *	The function hlralist() performs the following function:
+ *	The function hlralist() updates the code address
+ *	in the listing line to be output to the .rst file.
  *
- *	(1)	If the value of gline = 0 then the current listing
- *		file line is copied to the relocated listing file output.
- *
- *	(2)	The HLR hint and LST files are read until
- *		an ALIST or BLIST line is found.
- *
- *	(3)	If the ALIST or BLIST line is NOT listed the function
- *		returns else the LST line will be updated with the
- *		the new relocated pc value if the location was output
- *		to the LST file.
- *
- *	(4)	The updated line is written to the RST file.
  *
  *	local variables:
  *		int	i		loop counter
  *		int	m		character count
  *		int	n		character index
+ *		int	q		m+n to <q blank
+ *		int	r		number radix
  *		char *	afrmt		address format specifier
  *		char	str[]		temporary string
  *
  *	global variables:
- *		int	bytcnt		number of bytes output on this line
- *		int	gline		get a line from the LST file
- *					to translate for the RST file
- *		int	hline		get a line from the HLR file
- *					to get hints for the translation
- *		int	listing		encoded bits for an assembled line
- *		int	lmode		the assembler line mode
- *		char	rb[]		read listing file text line
- *		char	*rp		pointer to listing file text line
- *		FILE	*rfp		The file handle to the current
- *					output RST file
- *		FILE	*tfp		The file handle to the current
- *					LST file being scanned
- *		FILE	*hfp		The file handle to the current
- *					HLR file being scanned
+ *		a_uint	a_bytes		byte per address
+ *		int	listing		listing parameters
+ *		int	radix		current listing radix
+ *		char	rb[]		.lst line to scan
  *
  *	functions called:
  *		int	dgt()		lklist.c
- *		int	fclose()	c_library
- *		int	fgets()		c_library
  *		int	fprintf()	c_library
- *		VOID	gethlr()	lklist.c
+ *		char *	memcpy()	c_library
  *		int	sprintf()	c_library
- *		char *	strncpy()	c_library
+ *		int	strlen()	c_library
  *
  *	side effects:
- *		Lines of the LST file are copied to the RST file,
- *		the last line copied has the code address
- *		updated to reflect the program relocation.
+ *		Listing Text Line Address is updated.
  */
 
 VOID
@@ -1753,6 +1739,45 @@ a_uint cpc;
 }
 
 /*)Function	int	hlrclist()
+ *
+ *		int	cpc		current program counter value
+ *		int	v		current byte value
+ *
+ *	The function hlrclist() updates the code address
+ *	and byte values in the listing line to be output
+ *	to the .rst file.
+ *
+ *
+ *	local variables:
+ *		int	a		byte data start position
+ *		int	i		blank space loop counter
+ *		int	j		blank space loop temporary
+ *		int	m		characters per byte
+ *		int	n		offset to address
+ *		int	r		number radix
+ *		int	s		character count per byte
+ *		int	u		bytes per line
+ *		char *	afrmt		address format specifier
+ *		char *	dfrmt		data format specifier
+ *		char	str[]		temporary string
+ *
+ *	global variables:
+ *		a_uint	a_bytes		byte per address
+ *		int	bytcnt		byte position in listing
+ *		int	gcntr		number times function entered
+ *		int	listing		listing parameters
+ *		int	radix		current listing radix
+ *		char	rb[]		.lst line to scan
+ *
+ *	functions called:
+ *		int	dgt()		lklist.c
+ *		int	fprintf()	c_library
+ *		char *	memcpy()	c_library
+ *		int	sprintf()	c_library
+ *
+ *	side effects:
+ *		Listing Text Line Address and/or
+ *		byte code is updated.
 */
 
 VOID
@@ -1892,6 +1917,7 @@ int v;
 		/* strncpy(&rb[a + (s * gcntr) - 1], str, s); */
 		memcpy(&rb[a + (s * gcntr) - 1], str, s);
 	}
+
 	gcntr++;
 }
 
@@ -1908,14 +1934,15 @@ int v;
  *
  *	local variables:
  *		int	a		position in list line
- *		char *	afrmt		pointer to an address format
  *		a_uint	eqtv		equate value from list line
  *		int	i		repeat counter
  *		int	m		number of characters in format
  *		int	r		radix code
+ *		char *	afrmt		pointer to an address format
  *		char	str[]		temporary character string buffer
  *
  *	global variables:
+ *		a_uint	a_bytes		byte per address
  *		a_uint	a_mask		address mask
  *		char *	eqt_id		name of area equate is in
  *		struct head *hp		pointer to the current head structure
@@ -2089,6 +2116,7 @@ hlrelist()
  *	functions called:
  *		int	fclose()	c_library
  *		int	fgets()		c_library
+ *		int	sscanf()	c_library
  *
  *	side effects:
  *		parameters are read from the .hlr file

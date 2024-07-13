@@ -1,5 +1,5 @@
 82569
-R:\asxv5pxx\asxmak\symantec\build\as89lp.prj
+R:\ASXV5PXX\ASXMAK\SYMANTEC\BUILD\as89lp.prj
 as89lp.OPN
 novcs
 as89lp.DEF
@@ -19,10 +19,10 @@ as89lp.DEF
 0 0 0 0 0 "..\..\..\AS89LP\at89mch.c"
 0 0 0 0 0 "..\..\..\AS89LP\at89pst.c"
 0 0 0 0 0 "as89lp.DEF"
-0 -1 0 0 0 "..\..\..\AS89LP\at89.h"
-0 -1 0 0 0 "..\..\..\ASXXSRC\asxxxx.h"
+0 -1 0 0 0 "..\..\..\asxxsrc\asxxxx.h"
 0 -1 0 0 0 "C:\SC\INCLUDE\stdlib.h"
 0 -1 0 0 0 "C:\SC\INCLUDE\stdio.h"
 0 -1 0 0 0 "C:\SC\INCLUDE\setjmp.h"
 0 -1 0 0 0 "C:\SC\INCLUDE\string.h"
 0 -1 0 0 0 "C:\SC\INCLUDE\time.h"
+0 -1 0 0 0 "..\..\..\AS89LP\at89.h"

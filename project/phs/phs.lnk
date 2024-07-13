@@ -1,5 +1,4 @@
--mxsu
-phs
+-mxus
 phs
 acia
 acq
@@ -11,8 +10,8 @@ histos
 help
 aiconv
 phsmon
--b WORKPG = 0x0F00
--b BUFSAV = bufsav
--b PGMSAV = pgmsav
--b IRQVEC = irqvec
+-a WORKPG = 0x0F00
+-a BUFSAV = bufsav
+-a PGMSAV = pgmsav
+-a IRQVEC = irqvec
 -e

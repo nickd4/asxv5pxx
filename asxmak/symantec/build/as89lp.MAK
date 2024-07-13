@@ -24,8 +24,8 @@ DISASM		= OBJ2ASM
 LNK		= LINK
 DLLS		= 
 
-HEADERS		= ..\..\..\AS89LP\at89.h ..\..\..\ASXXSRC\asxxxx.h C:\SC\INCLUDE\stdlib.h  \
-		C:\SC\INCLUDE\stdio.h C:\SC\INCLUDE\setjmp.h C:\SC\INCLUDE\string.h C:\SC\INCLUDE\time.h 
+HEADERS		= ..\..\..\asxxsrc\asxxxx.h C:\SC\INCLUDE\stdlib.h C:\SC\INCLUDE\stdio.h  \
+		C:\SC\INCLUDE\setjmp.h C:\SC\INCLUDE\string.h C:\SC\INCLUDE\time.h ..\..\..\AS89LP\at89.h 
 
 DEFFILE		= as89lp.DEF
 
@@ -56,7 +56,7 @@ CREATETARGETDIR	= if not exist $(TARGETDIR)\*.* md $(TARGETDIR)
 
 LIBS		= 
 
-CFLAGS		=  -A -ml -o+time -3 -a2 -c -wx 
+CFLAGS		=  -A -r -J -ml -o+time -3 -a2 -c -wx 
 LFLAGS		=  /DE /PACKF /XN
 DEFINES		= 
 !ENDIF

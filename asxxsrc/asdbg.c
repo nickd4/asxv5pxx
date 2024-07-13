@@ -85,7 +85,7 @@
 VOID
 DefineSDCC_Line()
 {
-	char name[ NCPS ];
+	char name[ NCPS + FILSPC ];
         struct sym *pSym;
 
 	/*
@@ -132,7 +132,7 @@ DefineSDCC_Line()
 VOID
 DefineNoICE_Line()
 {
-	char name[ NCPS ];
+	char name[ NCPS + FILSPC ];
         struct sym *pSym;
 
 	/*

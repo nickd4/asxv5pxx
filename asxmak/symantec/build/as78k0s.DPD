@@ -29,15 +29,15 @@
 ..\build\assym.OBJ: \
 	..\..\..\asxxsrc\assym.c \
 	..\..\..\ASXXSRC\asxxxx.h 
-..\build\r78kadr.OBJ: \
-	..\..\..\as78k0s\r78kadr.c \
+..\build\r78ksadr.OBJ: \
+	..\..\..\as78k0s\r78ksadr.c \
 	..\..\..\asxxsrc\asxxxx.h \
-	..\..\..\AS78K0S\r78k0s.h 
-..\build\r78kmch.OBJ: \
-	..\..\..\as78k0s\r78kmch.c \
+	..\..\..\AS78K0S\r78ks.h 
+..\build\r78ksmch.OBJ: \
+	..\..\..\as78k0s\r78ksmch.c \
 	..\..\..\asxxsrc\asxxxx.h \
-	..\..\..\AS78K0S\r78k0s.h 
-..\build\r78kpst.OBJ: \
-	..\..\..\as78k0s\r78kpst.c \
+	..\..\..\AS78K0S\r78ks.h 
+..\build\r78kspst.OBJ: \
+	..\..\..\as78k0s\r78kspst.c \
 	..\..\..\asxxsrc\asxxxx.h \
-	..\..\..\AS78K0S\r78k0s.h 
+	..\..\..\AS78K0S\r78ks.h 

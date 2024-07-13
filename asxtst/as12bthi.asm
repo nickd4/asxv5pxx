@@ -42,7 +42,7 @@
 	.byte	0H024			; 00 24
 	.byte	0x024			; 00 24
 	.byte	0X024			; 00 24
-	.byte	$$24			; 00 24
+	.byte	$@24			; 00 24
 
 	.db	0			; 00 00
 	.dw	0			; 00 00
@@ -1297,7 +1297,7 @@ lclsym1:
 
 	cnstnt0 == 0xabcd		; global equate
 
-code0:	.word	a0			;s00r00
+code0:	.word	a00			;s00r00
 	.word	cnstnt0			; 0B CD
 
 	; Bank selected as _DSEG
@@ -1306,7 +1306,7 @@ code0:	.word	a0			;s00r00
 
 	cnstnt1 = 0x1234
 
-a0:	.word	0x00ff			; 00 FF
+a00:	.word	0x00ff			; 00 FF
 
 	; Bank selected as _DSEG
 	; Overlay and Data Segment
@@ -1314,17 +1314,17 @@ a0:	.word	0x00ff			; 00 FF
 
 	cnstnt2 = 0x5678
 
-	.word	a1			;s00r00
+	.word	a10			;s00r00
 
 	.area	AreaA
 
 	.=.+0x0020
-	.word	a2			;s00r00
+	.word	a20			;s00r00
 
 	.area	AreaB
 	.org	0x40
 
-	.word	a0,a1,a2		;s00r00s00r00s00r00
+	.word	a00,a10,a20		;s00r00s00r00s00r00
 	.word	AreaB,OVR		;s00r00s00r00
 
 abcdabcd::				; global symbol
@@ -1646,8 +1646,8 @@ Symbol Table
   3 LESS               0000 R   |     OVR                **** GX
   3 XY                 0000 R   |   3 XYZ                0006 R
   3 XZ                 0002 R   |   3 YZ                 0004 R
-  2 a0                 0000 R   |     a1                 **** GX
-    a2                 **** GX  |   3 abcdabcd           0045 GR
+  2 a00                0000 R   |     a10                **** GX
+    a20                **** GX  |   3 abcdabcd           0045 GR
   1 bndry_1            0000 R   |   1 bndry_2            0000 R
   1 bndry_3            0000 R   |   1 bndry_4            0000 R
   1 bndry_5            0000 R   |   1 bndry_6            0000 R

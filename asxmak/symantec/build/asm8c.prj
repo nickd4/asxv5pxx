@@ -4,7 +4,7 @@ asm8c.OPN
 novcs
 asm8c.DEF
 6
-1234233888
+1234237488
 0 0 0 0 0 "..\..\..\ASXXSRC\asdata.c"
 0 0 0 0 0 "..\..\..\ASXXSRC\asdbg.c"
 0 0 0 0 0 "..\..\..\ASXXSRC\asexpr.c"
@@ -25,3 +25,4 @@ asm8c.DEF
 0 -1 0 0 0 "C:\SC\INCLUDE\string.h"
 0 -1 0 0 0 "..\..\..\ASXXSRC\asxxxx.h"
 0 -1 0 0 0 "..\..\..\ASM8C\m8c.h"
+0 -1 0 0 0 "C:\SC\INCLUDE\time.h"

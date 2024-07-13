@@ -623,6 +623,7 @@ int r;
 					r |= R_AREA;
 					if ((r & (R_PAGE | R_PCR)) != R_PAGN) {
 						fprintf(stderr, "?ASxxxx-OUTRXB-NULL-POINTER error.\n\n");
+						aserr++;
 					}
 				} else
 				if (esp->e_flag) {
@@ -861,6 +862,7 @@ a_uint v;
 					r |= R_AREA;
 					if ((r & (R_PAGE | R_PCR)) != R_PAGN) {
 						fprintf(stderr, "?ASxxxx-OUTRXBM-NULL-POINTER error.\n\n");
+						aserr++;
 					}
 				} else
 				if (esp->e_flag) {
@@ -961,6 +963,7 @@ a_uint base;
  *
  *	global variables:
  *		int	a_bytes		T Line byte count
+ *		int	p_mask		user specified page mask
  *		int	oflag		-o, generate relocatable output flag
  *		int	pass		assembler pass number
  *		char	rel[]		relocation data for code/data array
@@ -996,6 +999,7 @@ int r;
 				n = area[1].a_ref;
 				r |= R_AREA;
 				fprintf(stderr, "?ASxxxx-OUTDP-NULL-POINTER error.\n\n");
+				aserr++;
 			} else
 			if (esp->e_flag) {
 				n = esp->e_base.e_sp->s_ref;
@@ -1008,7 +1012,7 @@ int r;
 			*relp++ = txtp - txt - a_bytes;
 			out_rw(n);
 		}
-		if (p_mask != 0xFF) {
+		if (p_mask != DEFAULT_PMASK) {
 			out_txb(a_bytes,p_mask);
 		}
 		outbuf("P");

@@ -1,15 +1,15 @@
 del *.hex
 del *.hlr
-del *.ihx
 del *.lst
 del *.map
 del *.rel
 del *.rst
+echo %1
 if %1.==. goto NoGlobals
 as89lp -lgaoxff mfm
 as89lp -lgaoxff sp0_x
 as89lp -lgaoxff print
-as89lp -lgaoxff macros lp3240.sfr macros
+as89lp -lgaoxff macros
 as89lp -lgaoxff mondeb51
 as89lp -lgaoxff xhelp
 as89lp -lgaoxff lbsfr
@@ -27,7 +27,7 @@ GOTO LINK
 as89lp -loxff mfm
 as89lp -loxff sp0_x
 as89lp -loxff print
-as89lp -loxff macros lp3240.sfr macros
+as89lp -loxff macros
 as89lp -loxff mondeb51
 as89lp -loxff xhelp
 as89lp -loxff lbsfr
@@ -43,5 +43,4 @@ as89lp -loxff debug
 GOTO LINK
 :LINK
 aslink -f mfm
-copy mfm.ihx mfm.hex
 

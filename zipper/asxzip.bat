@@ -22,12 +22,6 @@ rem
 zip -d asxv5pxx.zip asxv5pxx\asxdoc\asxrno\* asxv5pxx\asxhtmw\*
 zip -d asxv5pxx.zip asxv5pxx\updater\* asxv5pxx\misc\*
 rem
-rem  Remove Pad File
-rem
-zip -d asxv5pxx.zip asxv5pxx\asxv*.xml
-zip -d asxv5pxx.zip asxv5pxx\asxdoc\asxv*.xml
-zip -T asxv5pxx.zip
-rem
 rem  Copy Current readme.txt File To asxv5pxx.txt
 rem  And Add To The Zip Archive
 rem

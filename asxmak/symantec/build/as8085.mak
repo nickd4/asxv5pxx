@@ -25,7 +25,7 @@ LNK		= LINK
 DLLS		= 
 
 HEADERS		= ..\..\..\asxxsrc\asxxxx.h C:\SC\INCLUDE\stdlib.h C:\SC\INCLUDE\stdio.h  \
-		C:\SC\INCLUDE\setjmp.h C:\SC\INCLUDE\string.h ..\..\..\AS8085\i8085.h 
+		C:\SC\INCLUDE\setjmp.h C:\SC\INCLUDE\string.h ..\..\..\AS8085\i8085.h C:\SC\INCLUDE\time.h 
 
 DEFFILE		= as8085.DEF
 

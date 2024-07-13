@@ -147,7 +147,7 @@ int n;
 		if ((p = oprio(c)) <= n)
 			break;
 		if ((c == '>' || c == '<') && c != get()) {
-			fprintf(stderr, "Invalid expression");
+			fprintf(stderr, "?ASlink-Error-Invalid expression");
 			lkerr++;
 			return(v);
 		}
@@ -270,7 +270,7 @@ term()
 	if (c == '(') {
 		v = expr(0);
 		if (getnb() != ')') {
-			fprintf(stderr, "Missing delimiter");
+			fprintf(stderr, "?ASlink-Error-Missing delimiter");
 			lkerr++;
 		}
 		return(v);
@@ -375,14 +375,14 @@ term()
 	if (ctype[c] & LETTER) {
 		getid(id, c);
 		if ((sp = lkpsym(id, 0)) == NULL) {
-			fprintf(stderr, "Undefined symbol %s\n", id);
+			fprintf(stderr, "?ASlink-Error-Undefined symbol %s\n", id);
 			lkerr++;
 			return(0);
 		} else {
 			return(symval(sp));
 		}
 	}
-	fprintf(stderr, "Unknown operator %c\n", c);
+	fprintf(stderr, "?ASlink-Error-Unknown operator %c\n", c);
 	lkerr++;
 	return(0);
 }

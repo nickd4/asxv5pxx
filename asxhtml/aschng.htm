@@ -12,7 +12,233 @@
 <IMG width=576 height=5 border=0 SRC="rnbow.gif">
 
 <H4><B><PRE>
-                RELEASE NOTES
+                ASxxxx/ASlink version 5.50 is
+              considered a major release version.
+
+
+                  M A J O R   C H A N G E S
+
+
+THE ASSEMBLERS
+
+
+   The assembler command argument structure has changed.  Previ-
+ous versions specified that the first file of a multifile  argu-
+ment was the output file.  This has been changed:  
+
+THE OUTPUT FILE HAS THE NAME OF THE FIRST INPUT FILE
+
+
+   The output file name and/or extension can be changed by using
+the -o+ naming  option.   When  the  object  file  extension  is
+changed  from  the  default .rel then the linker input file must
+explicitly specify the extension.  
+
+   Additional 'Pass 2' scans to resolve mutilevel forward refer-
+ences are available using the -n option.  
+
+   The temporary hex radix prefix '$$' has been changed to '$@'.
+The decimal point, '.', following decimal  digits  is  now  con-
+sidered a temporary decimal radix.  
+
+   The string ascii, ascis, and asciz directives can now include
+byte values.  
+
+   The following new assembler directives have been added:  
+
+        .psharea        save and restore area contexts
+        .poparea        to/from a 16 element stack
+
+        .trace          trace insert, include, assembler
+        .ntrace         files, macros, and repeat macros
+
+        .dl and .long   create 4-byte values
+        .blkl           allocate 4-byte blocks
+                        (only in specific assemblers)
+
+
+   The  linker command argument structure has changed.  Previous
+versions specified that the first file of a  multifile  argument
+was the output file.  This has been changed:  
+
+THE OUTPUT FILE HAS THE NAME OF THE FIRST INPUT FILE
+
+
+   The  output hex format now uses the generally accepted format
+for Intel Hex.  In addition, the default output file name and/or
+extension  for  the Intel, Motorola, or Tandy linked code can be
+changed with the extended -i+/-s+/-t+ renaming options.  
+
+   The  previous linker command line -b option, set base address
+of area, has been changed to the -a option.  
+
+   The  redefined  command  line option -b now sets the base ad-
+dress of a bank.  
+
+  Given:
+        .area   A       (bank=BankA)
+        .bank   BankA   (base=0x100)
+
+        .area   B       (bank=BankB)
+        .bank   BankB   (base=0x200)
+
+  Then:
+    -a A=0x1000
+                sets the start address of area A to 0x1000
+                (this overrides any bank calculated address)
+
+    -b BankB=0x4000
+                sets the start address of BankB to 0x4000
+                (this overrides any defined base address)
+
+
+   Version  5.5  consolidates  all the updates since version 5.4
+which includes the addition of nine assemblers:  
+
+        AS4040          (supports the 4004)
+        AS68CF          (ColdFire)
+        AS68K           (68000, 68008, 68010, and 68020)
+        ASCOP4
+        ASCOP8
+        ASEZ8
+        ASPDP11         (with EIS, FIS, FPP, and CIS)
+        ASRS08          (reduced version of the HCS08)
+        ASSX
+
+   A much updated ASGB assembler is now more compatible with the
+instruction syntax found in the SDCC Gameboy assembler.  
+
+   The  internals  of  the AS6500 assembler have been updated to
+use  core  functionality  unavailable  when  the  assembler  was
+originally written.  
+
+
+Summary  of changes/additions to the ASxxxx Assemblers
+from version 5.40.
+
+2022_01_17 Version 5.40 Update 5
+
+   UPDATE_02, UPDATE_03, AND UPDATE_04
+   MUST BE INSTALLED BEFORE INSTALLING THIS UPDATE.
+ 
+   An update is performed by merging the update directories
+   with the asxv5pxx directories.  New files will be added
+   and changed files will be replaced.
+
+     1) Addressing mode errors fixed in the
+        AS78K0 and AS78K0S assemblers.
+
+     2) Test files for the AS78K0 and AS78K0S
+        assemblers are updated.
+
+   You must recompile the AS78K0 and AS78K0S
+   assemblers to incorporate the update. 
+
+
+2021_12_16 Version 5.40 Update 4
+
+   This update brings the assembler and linker to version 5.44
+   There is NO version 5.43
+
+   UPDATE_02 MUST BE INSTALLED AND
+   UPDATE_03 MUST BE INSTALLED BEFORE INSTALLING THIS UPDATE.
+ 
+   An update is performed by merging the update directories
+   with the asxv5pxx directories.  New files will be added
+   and changed files will be replaced.
+
+     1) New Assembler: ASRS08 supports the Freescale/NXP
+                       RS08 series of microprocessors.
+
+     2) Updates to build files.
+
+     3) Documentation updated.
+
+   You must recompile the ASxxxx Assemblers and Linker
+to incorporate the update.xxx  
+
+
+2021_10_25 Version 5.40 Update 3
+
+   This update brings the assembler and linker to version 5.42
+
+   UPDATE_02 MUST BE INSTALLED BEFORE INSTALLING THIS UPDATE.
+
+     2) Assembler and Linker errors are now reported in a
+        more consistant manner.
+
+     2) Assembler and Linker exit codes have been updated.
+
+     3) Corrected the handling of the -h option in aslink.
+
+     4) Fix the ascop8 test file tcop8.asm
+
+     5) Miscellaneous build and cleanup file corrections
+
+   Assembler and Linker files modified:
+
+   assemblers:
+     asdata.c, asmain.c, asout.c, assym.c, and asxxxx.h
+
+   aslink:
+     lkarea.c, lkbank.c, kkeval.c, lkhead.c, lklex.c, lklibr.c,
+     lkmain.c, lkroc.c, lkrloc3.c, lkrloc4.c, lksym.c, and aslink.h
+
+   You must recompile the ASxxxx Assemblers and Linker
+to incorporate the update.xxx  
+
+
+2021_09_01 Version 5.40 Update 2
+
+   This update brings the assembler and linker to version 5.41
+
+   Includes: 2021_05_11 Version 5.40 Update 1
+
+   and the following:
+
+   assemblers:
+     asmain    - 'cnt' variable changed to 'a_uint' type.
+     asxxxx.h  - Version 5.41
+
+   aslink:
+     lklist.c  - linking errors now reported in .rst file
+     lkrloc4.c - corrected problem in reported error location
+     lkrloc3.c - "
+     aslink.h  - Version 5.41
+
+   as8x300:
+     s8xmch.c  - line 351 changed to
+     		 if ((v2 == 0x07) | (v2 == 0x0F)) {
+
+   New Assemblers:
+     as4040    - Intel 4040 and 4004
+     ascop4    - National Semiconductor COP400 Series Of Microprocessors
+     ascop8    - National Semiconductor COP800 Series Of Microprocessors
+
+   Updates to build/make files, assembler test files, and documentation.
+
+
+2021_05_11 Version 5.40 Update 1
+
+   AS78K0 and AS78K0S -
+
+   Instructions CMP, XOR, AND, OR, ADD, SUB, ADDC, SUBC, and XCH
+   with register to register operations of the form Rn,Rn
+   failed to report an error if one of the arguments was not A.
+
+   Instruction MOVW with an addressing mode of SADDRP failed to
+   report an ODD address as an error.
+
+     Note: An externally defined SADDRP address which is ODD
+           will not be reported as an error by the assembler
+           or the linker.
+
+</PRE></B></H4>
+
+<IMG width=576 height=5 border=0 SRC="rnbow.gif">
+
+<H4><B><PRE>
+                VERSION 5.40 RELEASE NOTES
 
 
         Asxxxx/ASlink version 5.40 is
@@ -733,7 +959,7 @@ Version 4.00 to Version 4.10.
 
     12.  Made many corrections to internal code comments.  
 
- </PRE></B></H4>
+</PRE></B></H4>
 <H5><A HREF="asxdoc.htm#TOP"> Go to the Documentation Index</A></H5>
 
 <IMG width=576 height=5 border=0 SRC="rnbow.gif">
@@ -748,6 +974,6 @@ Version 4.00 to Version 4.10.
 <B>...  Home Page</B></P>
 </H4>
 
-<H6><P><B>Last Updated: March 2021</B></P></H6>
+<H6><P><B>Last Updated: September 2023</B></P></H6>
 </BODY> 
 </HTML>

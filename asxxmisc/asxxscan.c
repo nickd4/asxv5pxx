@@ -1,7 +1,7 @@
 /* asxscn.c */
 
 /*
- *  Copyright (C) 1989-2021  Alan R. Baldwin
+ *  Copyright (C) 1989-2023  Alan R. Baldwin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -355,9 +355,9 @@ loop:
 		 */
 		switch(a_bytes) {
 		default:
-		case 2: if (scline[25] == ']') { k -= 1; }	break;
+		case 2: if (scline[22] == '[') { k -= 1; }	break;
 		case 3:
-		case 4: if (scline[33] == ']') { k -= 1; }	break;
+		case 4: if (scline[30] == '[') { k -= 1; }	break;
 		}
 
 		/*

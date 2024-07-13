@@ -129,7 +129,7 @@ extern	int		srch(char *str);
 
 	/* ST7mch.c */
 extern	VOID		machine(struct mne *mp);
-extern	int		mchpcr(struct expr *esp);
+extern	int		mchpcr(struct expr *esp, int *v, int n);
 extern	VOID		minit(void);
 extern	int		ls_mode(struct expr *e);
 extern	int		setbit(int b);

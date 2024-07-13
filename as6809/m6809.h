@@ -96,6 +96,7 @@
  * Set Direct Pointer
  */
 #define	S_SDP	80
+#define	S_PGD	81
 
 
 extern	int	aindx;
@@ -146,7 +147,7 @@ extern	a_uint		zpgadr;
 extern	VOID		machine(struct mne *mp);
 extern	VOID		genout(int cpg, int op, int rf, struct expr *esp);
 extern	VOID		m68out(int i);
-extern	int		mchpcr(struct expr *esp);
+extern	int		mchpcr(struct expr *esp, int *v, int n);
 extern	VOID		minit(void);
 extern	int		setbit(int b);
 extern	int		getbit(void);
@@ -166,7 +167,8 @@ extern	a_uint		zpgadr;
 extern	VOID		machine();
 extern	VOID		genout();
 extern	VOID		m68out();
-extern	int		mchpcr();
+extern	int		mchpcr1();
+extern	int		mchpcr2();
 extern	VOID		minit();
 extern	int		setbit();
 extern	int		getbit();

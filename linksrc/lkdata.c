@@ -63,8 +63,9 @@ char	rb[NINPUT];	/*	LST file text line being
 			 */
 int	oflag;		/*	Output file type flag
 			 */
-int	o1flag;		/*	Legacy Intel Hex flag
-			 *	Start address record type set to 1 
+char	*outnam;	/*	Pointer to -o+ output file name
+			 */
+char	*outext;	/*	Pointer to -o+ output file extension
 			 */
 int	objflg;		/*	Linked file/library object output flag
 			 */
@@ -210,7 +211,6 @@ struct	lfile	*lfp;	/*	pointer to current lfile structure
 			 *	being processed by parse()
 			 */
 FILE	*ofp = NULL;	/*	Output file handle
-			 *	for word formats
 			 */
 
 #if NOICE
@@ -308,12 +308,13 @@ struct	head	*hp;	/*	Pointer to the current
  *		int	b_flag;		Bank flags
  *		char *	b_fspec;	Bank File Specification
  *		FILE *	b_ofp;		Bank File Handle
+ *		char *	b_ofspec;	Bank Output File Specification
  *		int	b_oflag;	Bank has output flag
  *		int	b_rtaflg	Bank First Output flag
  *	};
  */
 struct	bank	bank[1] = {
-    {	NULL,	"",	"",	0,	0,	0,	0,	"",	NULL,	0,	1	}
+    {	NULL,	"",	"",	0,	0,	0,	0,	"",	NULL,	"",	0,	1	}
 };
 
 struct	bank	*bankp = &bank[0];
@@ -415,20 +416,27 @@ struct	sym *symhash[NHASH]; /*	array of pointers to NHASH
 			      */
 /*
  *	The struct base contains a pointer to a
- *	base definition string and a link to the next
- *	base structure.
+ *	base definition string and a link to the
+ *	next base structure.
  *
  *	struct	base
  *	{
- *		struct	base  *b_base;		Base link
- *		char	      *b_strp;		String pointer
+ *		struct	base  *link;		Base link
+ *		char	      *strp;		String pointer
  *	};
  */
-struct	base	*basep;	/*	The pointer to the first
-			 *	base structure
+struct	base *a_basep;	/*	Pointer to the first
+		 	*	area base structure
+		 	*/
+struct	base *a_bsp;	/*	Pointer to the current
+			 *	area base structure
 			 */
-struct	base	*bsp;	/*	Pointer to the current
-			 *	base structure
+
+struct	base *b_basep;	/*	Pointer to the first
+		 	*	bank base structure
+		 	*/
+struct	base *b_bsp;	/*	Pointer to the current
+			 *	bank base structure
 			 */
 
 /*

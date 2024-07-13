@@ -85,6 +85,7 @@ struct adsym
  * Set Direct Pointer
  */
 #define	S_SDP	80
+#define	S_PGD	81
 
 
 	/* machine dependent functions */
@@ -100,7 +101,7 @@ extern	int		srch(char *str);
 	/* m00mch.c */
 extern	struct  area	*zpg;
 extern	VOID		machine(struct mne *mp);
-extern	int		mchpcr(struct expr *esp);
+extern	int		mchpcr(struct expr *esp, int *v, int n);
 extern	VOID		minit(void);
 
 #else

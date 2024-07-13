@@ -1,2 +1,2 @@
-ascheck -loxcff mactst
+ascheck -loxcfft mactst
 

@@ -1,10 +1,10 @@
 82569
-R:\asxv5pxx\asxmak\symantec\build\asf2mc8.prj
+R:\ASXV5PXX\ASXMAK\SYMANTEC\BUILD\asf2mc8.prj
 asf2mc8.OPN
 novcs
 asf2mc8.DEF
 6
-1340994683
+1340998284
 0 0 0 0 0 "..\..\..\ASXXSRC\asdata.c"
 0 0 0 0 0 "..\..\..\ASXXSRC\asdbg.c"
 0 0 0 0 0 "..\..\..\ASXXSRC\asexpr.c"
@@ -26,3 +26,4 @@ asf2mc8.DEF
 0 0 0 0 0 "..\..\..\ASF2MC8\f2mc8adr.c"
 0 0 0 0 0 "..\..\..\ASF2MC8\f2mc8mch.c"
 0 0 0 0 0 "..\..\..\ASF2MC8\f2mc8pst.c"
+0 -1 0 0 0 "C:\SC\INCLUDE\time.h"

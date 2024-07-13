@@ -377,8 +377,8 @@ char *name;
 	FILE *libfp, *fp;
 	struct lbname *lbnh;
 	struct lbfile *lbfh, *lbf;
-	char relfil[NINPUT+2];
-	char buf[NINPUT+2];
+	char relfil[NINPUT];
+	char buf[NINPUT];
 	char symname[NINPUT];
 	char *path,*str,*strend;
 	char *p, *q;
@@ -391,7 +391,7 @@ char *name;
 
 /*1*/	for (lbnh=lbnhead; lbnh; lbnh=lbnh->next) {
 		if ((libfp = fopen(lbnh->libspc, "r")) == NULL) {
-			fprintf(stderr, "Cannot open library file %s\n",
+			fprintf(stderr, "?ASlink-Error-Cannot open library file %s\n",
 				lbnh->libspc);
 			lkexit(ER_FATAL);
 		}
@@ -404,7 +404,6 @@ char *name;
 		 */
 
 /*2*/		while (fgets(relfil, NINPUT, libfp) != NULL) {
-		    relfil[NINPUT+1] = '\0';
 		    chopcrlf(relfil);
 		    if (path != NULL) {
 			str = (char *) malloc (strlen(path)+strlen(relfil)+5);
@@ -446,7 +445,6 @@ char *name;
 			
 /*4*/			while (fgets(buf, NINPUT, fp) != NULL) {
 
-			buf[NINPUT+1] = '\0';
 			chopcrlf(buf);
 
 			/*
@@ -572,7 +570,7 @@ char *filspc;
 	char str[NINPUT];
 
 	if ((fp = fopen(filspc,"r")) != NULL) {
-		while (fgets(str, sizeof(str), fp) != NULL) {
+		while (fgets(str, NINPUT, fp) != NULL) {
 			chopcrlf(str);
 			ip = str;
 			link();

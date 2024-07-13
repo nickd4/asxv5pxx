@@ -25,7 +25,8 @@ LNK		= LINK
 DLLS		= 
 
 HEADERS		= C:\SC\INCLUDE\stdio.h C:\SC\INCLUDE\setjmp.h ..\..\..\asxxsrc\asxxxx.h  \
-		..\..\..\ASGB\gb.h C:\SC\INCLUDE\string.h C:\SC\INCLUDE\alloc.h C:\SC\INCLUDE\stdlib.h 
+		..\..\..\ASGB\gb.h C:\SC\INCLUDE\string.h C:\SC\INCLUDE\alloc.h C:\SC\INCLUDE\stdlib.h  \
+		C:\SC\INCLUDE\time.h 
 
 DEFFILE		= asgb.DEF
 

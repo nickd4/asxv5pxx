@@ -8,9 +8,9 @@
 ..\build\asout.OBJ+
 ..\build\assubr.OBJ+
 ..\build\assym.OBJ+
-..\build\r78kadr.OBJ+
-..\build\r78kmch.OBJ+
-..\build\r78kpst.OBJ
+..\build\r78ksadr.OBJ+
+..\build\r78ksmch.OBJ+
+..\build\r78kspst.OBJ
 ..\exe\$SCW$.EXE
 NUL
   

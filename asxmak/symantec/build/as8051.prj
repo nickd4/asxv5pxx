@@ -4,7 +4,7 @@ as8051.OPN
 novcs
 as8051.DEF
 6
-1150355460
+1150362660
 0 0 0 0 0 "..\..\..\ASXXSRC\asdata.c"
 0 0 0 0 0 "..\..\..\ASXXSRC\asdbg.c"
 0 0 0 0 0 "..\..\..\ASXXSRC\asexpr.c"
@@ -25,3 +25,4 @@ as8051.DEF
 0 -1 0 0 0 "C:\SC\INCLUDE\setjmp.h"
 0 -1 0 0 0 "C:\SC\INCLUDE\string.h"
 0 -1 0 0 0 "..\..\..\AS8051\i8051.h"
+0 -1 0 0 0 "C:\SC\INCLUDE\time.h"

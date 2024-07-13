@@ -1,7 +1,7 @@
 /* st7mch.c */
 
 /*
- *  Copyright (C) 2010-2014  Alan R. Baldwin
+ *  Copyright (C) 2010-2023  Alan R. Baldwin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -42,8 +42,8 @@ int	bb[NB];
 #define	OPCY_ERR	((char) (0xFE))
 #define	OPCY_SKP	((char)	(0xFD))
 
-/*	OPCY_NONE	((char) (0x80))	*/
-/*	OPCY_MASK	((char) (0x7F))	*/
+#define	OPCY_NONE	((char) (0x80))
+#define	OPCY_MASK	((char) (0x7F))
 
 #define	UN	((char) (OPCY_NONE | 0x00))
 #define	P1	((char) (OPCY_NONE | 0x01))
@@ -154,6 +154,12 @@ struct mne *mp;
 	int t1, t2;
 	int v1, v2, v3;
 	int op, rf;
+
+	/*
+	 * Using Internal Format
+	 * For Cycle Counting
+	 */
+	opcycles = OPCY_NONE;
 
 	clrexpr(&e1);
 	clrexpr(&e2);
@@ -1242,8 +1248,7 @@ struct mne *mp;
 		 */
 			expr(&e1, 0);
 			outab(op);
-			if (mchpcr(&e1)) {
-				v1 = (int) (e1.e_addr - dot.s_addr - 1);
+			if (mchpcr(&e1, &v1, 1)) {
 				if ((v1 < -128) || (v1 > 127))
 					xerr('a', "Branching Range Exceeded.");
 				outab(v1);
@@ -1278,8 +1283,7 @@ struct mne *mp;
 		case S_SHORT:
 			outrbm(&e2, R_BITS, op);
 			outrb(&e1, R_USGN);
-			if (mchpcr(&e3)) {
-				v3 = (int) (e3.e_addr - dot.s_addr - 1);
+			if (mchpcr(&e3, &v3, 1)) {
 				if ((v3 < -128) || (v3 > 127))
 					xerr('a', "Branching Range Exceeded.");
 				outab(v3);
@@ -1339,6 +1343,11 @@ struct mne *mp;
 			opcycles = Page[opcycles & OPCY_MASK][cb[1] & 0xFF];
 		}
 	}
+	/*
+	 * Translate To External Format
+	 */
+	if (opcycles == OPCY_NONE) { opcycles  =  CYCL_NONE; } else
+	if (opcycles  & OPCY_NONE) { opcycles |= (CYCL_NONE | 0x3F00); }
 }
 
 /*
@@ -1380,10 +1389,28 @@ struct expr *e;
  * Branch/Jump PCR Mode Check
  */
 int
-mchpcr(esp)
+mchpcr(esp, v, n)
 struct expr *esp;
+int *v;
+int n;
 {
 	if (esp->e_base.e_ap == dot.s_area) {
+		if (v != NULL) {
+#if 1
+			/* Allows branching from top-to-bottom and bottom-to-top */
+ 			*v = (int) (esp->e_addr - dot.s_addr - n);
+			/* only bits 'a_mask' are significant, make circular */
+			if (*v & s_mask) {
+				*v |= (int) ~a_mask;
+			}
+			else {
+				*v &= (int) a_mask;
+			}
+#else
+			/* Disallows branching from top-to-bottom and bottom-to-top */
+			*v = (int) ((esp->e_addr & a_mask) - (dot.s_addr & a_mask) - n);
+#endif
+		}
 		return(1);
 	}
 	if (esp->e_flag==0 && esp->e_base.e_ap==NULL) {
@@ -1407,13 +1434,25 @@ struct expr *esp;
 VOID
 minit()
 {
+	int i;
+
 	/*
 	 * Byte Order
 	 */
 	hilo = 1;
 
 	/*
-	 * Reset Bit Table
+	 * Multi-pass Processing
+	 */
+	passlmt = 100;	/* Maximum Pass 1 Loops */
+	if (pass < 2) {
+		for (i=0; i<NB; i++) {
+			bb[i] = 0;
+		}
+	}
+
+	/*
+	 * Reset Bit Pointer
 	 */
 	bp = bb;
 	bm = 1;

@@ -1,7 +1,7 @@
 /* asmcro.c */
 
 /*
- *  Copyright (C) 2010-2021  Alan R. Baldwin
+ *  Copyright (C) 2010-2022  Alan R. Baldwin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -31,6 +31,7 @@
  *	asmcro.c contains the following functions:
  *		char   *fgetm()		get a macro text line
  *		VOID	getdarg()	get a macro definition argument
+ *		VOID	getdfarg()	get a macro default argument
  *		VOID	getxarg()	get a macro expansion argument
  *		VOID	getxstr()	get a macro expansion string
  *		int	macro()		run a macro
@@ -38,6 +39,7 @@
  *		int	macrosub()	substitute macro expansion arguments
  *		VOID	mcrinit()	initialize macro processing variables
  *		int	mcrprc()	macro processing control
+ *		VOID   *mhunk()		allocate a memory block
  *		char   *mstring()	store a macro string
  *		char   *mstruct()	allocate macro space
  *		mcrdef *newdef()	initialize a macro definition
@@ -94,9 +96,12 @@
  *		VOID	clrexpr()	asexpr.c
  *		int	comma()		aslex.c
  *		VOID	err()		assubr.c
+ *		VOID	expr()		asexpr.c
  *		VOID	getdarg()	asmcro.c
+ *		VOID	getfdarg()	asmcro.c
  *		int	getid()		aslex.c
  *		int	getdlm()	aslex.c
+ *		VOID	getinline()	asmcro.c
  *		int	getmap()	aslex.c
  *		int	getnb()		aslex.c
  *		VOID	getxarg()	asmcro.c
@@ -108,6 +113,7 @@
  *		VOID *	mstruct()	asmcro.c
  *		mcrdef *newdef()	asmcro.c
  *		VOID	qerr()		assubr.c
+ *		VOID	skpcomma()	aslex.c
  *		VOID	unget()		aslex.c
  *		VOID	xerr()		assubr.c
  *
@@ -149,6 +155,7 @@ int code;
 		 */
 		if (more()) {
 			getid(id, getnb());
+			skpcomma();	/* Skip optional (,) */
 		} else {
 			xerr('q', ".macro requires at least one argument.");
 		}
@@ -158,6 +165,10 @@ int code;
 		 */
 		while (more()) {
 			getdarg(np);
+			getdfarg(np);
+			if ((comma(0) == 1) &&  (more() == 0)) {
+				xerr('q', ".macro missing argument after ','");
+			}
 		}
 		break;
 
@@ -182,11 +193,13 @@ int code;
 		 * Get macro definition argument
 		 */
 		getdarg(np);
+		comma(0);
 		/*
-		 * Get expansion arguments
+		 * Get inline expansion arguments
 		 */
 		while (more()) {
-			getxarg(np);
+			getinline(np);
+			comma(0);
 		}
 		np->rptcnt = np->xarg;
 		break;
@@ -218,10 +231,11 @@ int code;
 		 * Get macro definition argument
 		 */
 		getdarg(np);
+		comma(0);
 		/*
-		 * Get expansion argument
+		 * Get inline expansion argument
 		 */
-		getxarg(np);
+		getinline(np);
 		np->rptcnt = (np->bgnxrg != NULL) ? strlen(np->bgnxrg->text) : 0;
 		break;
 
@@ -365,7 +379,7 @@ int code;
 					}
 				}
 			}
-			if (more() && comma(0) && !more()) {
+			if ((comma(0) == 1) &&  (more() == 0)) {
 				xerr('q', "Expecting argument after ','.");
 			}
 		}
@@ -465,12 +479,12 @@ int code;
  *		mcrdef	mcrp		link to macro definition being built
  *
  *	functions called:
- *		int	comma()		aslex.c
  *		int	getid()		aslex.c
  *		int	getnb()		aslex.c
  *		char *	mstring()	asmcro.c
  *		VOID *	mstruct()	asmcro.c
  *		VOID	qerr()		assubr.c
+ *		VOID	unget()		aslex.c
  *
  *	side effects:
  *		Macro definition argument is added to macro definition
@@ -487,10 +501,6 @@ struct mcrdef * np;
 	char id[NCPS];
 	int c;
 
-	/*
-	 * Skip leading ','
-	 */
-	comma(0);
 	if (more()) {
 		if (((c=getnb()) == '?') && (ctype[c=get()] & LETTER)) {
 			unget(c);
@@ -517,6 +527,64 @@ struct mcrdef * np;
 	np->narg += 1;
 }
 
+/*)Function	VOID	getdfarg(np)
+ *
+ *		struct mcrdef *np	pointer to macro definition structure
+ *
+ *	The function getdfarg() checks for a default
+ *	argument.  The definiton may be any valid label
+ *	or symbol (excluding temporary symbols).
+ *
+ *	local variables:
+ *		strlst *str		text line structure
+ *		char	id[]		text string
+ *		int	c		character
+ *
+ *	global variables:
+ *		mcrdef	mcrp		link to macro definition being built
+ *
+ *	functions called:
+ *		int	getid()		aslex.c
+ *		int	getnb()		aslex.c
+ *		char *	mstring()	asmcro.c
+ *		VOID *	mstruct()	asmcro.c
+ *		VOID	unget()		aslex.c
+ *
+ *	side effects:
+ *		Macro default argument is added to macro definition
+ *		structure and the number of arguments is incremented.
+ *		Failure to allocate space for the argument string will
+ *		terminate the assembler.
+ */
+
+VOID
+getdfarg(np)
+struct mcrdef * np;
+{
+	struct strlst *str;
+	char id[NCPS];
+	int c;
+
+	/* check if argument has a default value */
+	if ((c = getnb()) == '=') {
+		getxstr(id);
+		getxnum(id);
+	} else {
+		*id = '\0';
+		unget(c);
+	}
+	str = (struct strlst *) mstruct (sizeof (struct strlst));
+	str->next = NULL;
+	str->text = mstring(id);
+	if (np->bgndrg == NULL) {
+		np->bgndrg = str;
+	} else {
+		np->enddrg->next = str; 
+	}
+	np->enddrg = str;
+	np->darg += 1;
+}
+
 /*)Function	VOID	getxarg(np)
  *
  *		struct mcrdef *np	pointer to macro definition structure
@@ -534,45 +602,133 @@ struct mcrdef * np;
  *	the argument is evaluated and represented by an
  *	unsigned integer in the current radix.
  *
+ *	If the string is of the form label=value then the
+ *	matching macro definition label is given this value.
+ *	
  *	local variables:
+ *		int	c		character
+ *		int	i		loop counter
  *		char	id[]		text string
- *		char *	frmt		format string pointer
- *		char *	sip		save ip pointer
+ *		char *	p		pointer to '=' character
  *		strlst *str		text line structure
+ *		strlst *arg		argument definition string
+ *		strlst *xrg		expansion argument string
  *
  *	global variables:
- *		char *	ip		source text line pointer
+ *		int	mcrfil		macro nesting level
+ *		int	zflag		case sensitivity flag
  *
  *	functions called:
- *		a_uint	absexpr()	asexpr.c
  *		VOID	getxstr()	asmcro.c
+ *		VOID	getxnum()	asmcro.c
  *		char *	mstring()	asmcro.c
- *		VOID *	mstruct()	asmcro.c
- *		int	sprintf()	c_library
+ *		char *	strchr()	c_library
+ *		int	symeq()		assym.c
+ *		VOID	qerr()		assubr.c
  *
  *	side effects:
- *		Macro expansion argument is added to macro definition
- *		structure and the number of arguments is incremented.
- *		Failure to allocate space for the argument string will
- *		terminate the assembler.
+ *		Macro expansion argument is scanned:
+ *		(1) A definition argument is processed
+ *		    (xarg is not incremented)
+ *		(2) A parameter argument is processed
+ *		    (xarg is incremented)
  */
 
 VOID
 getxarg(np)
 struct mcrdef * np;
 {
-	struct strlst *str;
+	struct strlst *str, *arg, *xrg;
 	char id[NCPS];
-	char *frmt;
-	char *sip;
+	char *p;
+	int c, i;
+
+	/*
+	 * Check for named parameter
+	 */
+	p = ip;
+	if (ctype[c = getnb()] & LETTER) {
+		getid(id, c);
+		if (getnb() == '=') {
+			/*
+			 * Named parameter present, find matching entry
+			 */
+			arg = np->bgnarg;
+			xrg = np->bgnxrg;
+			for (i=0; i != np->narg; i++) {
+				if (symeq(id, arg->text, zflag) == 1) break;
+				arg = arg->next;
+				xrg = xrg->next;
+			}
+
+			/*
+			 * At this point can we can overwrite argument name,
+			 * get the argument string (then check for not found,
+			 * done this way so we skip argument string on error)
+			 */
+			getxstr(id);
+
+			if (i == np->narg) {
+				xerr('q', "No Matching Label Found");
+			} else {
+				getxnum(id);
+				xrg->text = mstring(id);
+			}
+			return;
+		}
+	}
+	ip = p;
 
 	/*
 	 * Get the argument string
 	 */
 	getxstr(id);
 
-	str = (struct strlst *) mstruct (sizeof (struct strlst));
-	str->next = NULL;
+	if (np->xarg != np->narg) {
+		str = np->bgnxrg;
+		for (i=0; i != np->xarg; i++) {
+			str = str->next;
+		}
+		getxnum(id);
+		str->text = mstring(id);
+		np->xarg += 1;
+	} else {
+		--mcrfil;
+		xerr('q', "Too Many Arguments");
+	}
+}
+
+/*)Function	VOID	getxnum(id)
+ *
+ *		char *id		pointer to string
+ *
+ *	The function getxnum evaluates an undelimited
+ *	string of the form \arg to create an unsigned
+ *	integer in the current radix.
+ *
+ *	local variables:
+ *		char *	frmt		format string pointer
+ *		char *	sip		save ip pointer
+ *
+ *	global variables:
+ *		char *	ip		source text line pointer
+ *
+ *	functions called:
+ *		a_uint	absexpr()	asexpr.c
+ *		int	sprintf()	c_library
+ *
+ *	side effects:
+ *		Macro expansion argument is evaluated and
+ *		returned in the input string.
+ */
+
+VOID
+getxnum(id)
+char *id;
+{
+	char *sip;
+	char * frmt;
+
 	if (*id == '\\') {
 		sip = ip;
 		ip = id + 1;
@@ -594,6 +750,60 @@ struct mcrdef * np;
 		sprintf(id, frmt, absexpr());
 		ip = sip;
 	}
+}
+
+/*)Function	VOID	getinline(np)
+ *
+ *		struct mcrdef *np	pointer to macro definition structure
+ *
+ *	The function getinline() gets the next inline expansion
+ *	argument from the assembler input text.  The expansion
+ *	may contain any ASCII character including the space and
+ *	tab characters.  If the argument contains a comma then
+ *	the argument string must be delimited using the form
+ *
+ *		^/ ... / where the character '/' may be any
+ *		printing character not in the delimited string.
+ *
+ *	If the undelimited string is of the form \arg then
+ *	the argument is evaluated and represented by an
+ *	unsigned integer in the current radix.
+ *
+ *	local variables:
+ *		char	id[]		text string
+ *		strlst *str		text line structure
+ *
+ *	global variables:
+ *		none
+ *
+ *	functions called:
+ *		VOID	getxstr()	asmcro.c
+ *		VOID	getxnum()	asmcro.c
+ *		char *	mstring()	asmcro.c
+ *		VOID *	mstruct()	asmcro.c
+ *
+ *	side effects:
+ *		Inline expansion argument is added to inline definition
+ *		structure and the number of arguments is incremented.
+ *		Failure to allocate space for the argument string will
+ *		terminate the assembler.
+ */
+
+VOID
+getinline(np)
+struct mcrdef * np;
+{
+	struct strlst *str;
+	char id[NCPS];
+
+	/*
+	 * Get the argument string
+	 */
+	getxstr(id);
+	getxnum(id);
+
+	str = (struct strlst *) mstruct (sizeof (struct strlst));
+	str->next = NULL;
 	str->text = mstring(id);
 	if (np->bgnxrg == NULL) {
 		np->bgnxrg = str;
@@ -626,7 +836,6 @@ struct mcrdef * np;
  *		char	ctype[]		charcter type array
  *
  *	functions called:
- *		int	comma()		aslex.c
  *		int	get()		aslex.c
  *		int	getnb()		aslex.c
  *		VOID	qerr()		assubr.c
@@ -651,16 +860,9 @@ char *id;
 	 * be any character not in the delimited string.
 	 */
 	p = id;
-	/*
-	 * Skip leading ','
-	 */
-	comma(0);
 	switch (c=getnb()) {
-	case '^':	dc = get();	break;
-	default:	dc = ',';	break;
-	}
-	switch (c) {
 	case '^':
+		dc = get();
 		while ((c=get()) != '\0') {
 			if (c == dc) {
 				break;
@@ -672,6 +874,7 @@ char *id;
 		}
 		break;
 	default:
+		dc = ',';
 		unget(c);
 		while ((c=get()) != '\0') {
 			if ((c == dc) ||
@@ -699,6 +902,7 @@ char *id;
  *		macrofp *nfp		pseudo FILE Handle
  *		strlst *str		missing argument expansion string
  *		strlst *arg		macro definition argument string
+ *		strlst *drg		macro default    value    string
  *		strlst *xrg		macro expansion  argument string
  *		char	xrgstr[]	dumby argument evaluation string
  *
@@ -731,8 +935,11 @@ struct mcrdef * np;
 	struct macrofp *nfp;
 	struct strlst *str;
 	struct strlst *arg;
+	struct strlst *drg;
 	struct strlst *xrg;
 	char xrgstr[NINPUT];
+
+	skpcomma();	/* Skip an immediate (,) */
 
 	if (++mcrfil > MAXMCR) {
 		--mcrfil;
@@ -742,6 +949,7 @@ struct mcrdef * np;
 	if (mcrfil > maxmcr) {
 		maxmcr = mcrfil;
 	}
+	pshmstk(np);
 	/*
 	 * Create a macrofp structure for fgetm()
 	 */
@@ -755,31 +963,16 @@ struct mcrdef * np;
 	 * Check if arguments are required
 	 */
 	if (np->type == O_MACRO) {
-		np->xarg = 0;
-		np->bgnxrg = NULL;
-		np->endxrg = NULL;
-		while (more()) {
-			if (np->xarg == np->narg) {
-				/*
-				 * Too many arguments
-				 * Abort macro with syntax error
-				 */
-				--mcrfil;
-				qerr();
-			}
-			getxarg(np);
-		}
 		/*
-		 * Fill in missing arguments and
-		 * check for dummy arguments.
+		 * Create empty xarg elements
 		 */
 		arg = np->bgnarg;
-		xrg = np->bgnxrg;
+		xrg = np->bgnxrg = NULL;
 		while (arg != NULL) {
 			if (xrg == NULL) {
 				str = (struct strlst *) mstruct (sizeof (struct strlst));
 				str->next = NULL;
-				str->text = mstring("");
+				str->text = "";
 				if (np->bgnxrg == NULL) {
 					np->bgnxrg = str;
 				} else {
@@ -788,17 +981,47 @@ struct mcrdef * np;
 				np->endxrg = str;
 				xrg = str;
 			}
-			if ((*arg->text == '?') && (strlen(xrg->text) == 0)) {
-#ifdef	LONGINT
-				sprintf(xrgstr, "%lu$", mls.s_addr++);
-#else
-				sprintf(xrgstr, "%u$", mls.s_addr++);
-#endif
-				xrg->text = mstring(xrgstr);
-			}
 			arg = arg->next;
 			xrg = xrg->next;
 		}
+		np->xarg = 0;
+		while (more()) {
+			getxarg(np);
+			comma(0);
+		}
+		/*
+		 * Check for dummy arguments.
+		 */
+		arg = np->bgnarg;
+		drg = np->bgndrg;
+		xrg = np->bgnxrg;
+		while (arg != NULL) {
+			if (strlen(xrg->text) == 0) {
+				if (strlen(drg->text) != 0) {
+					xrg->text = drg->text;
+				}
+				if (*arg->text == '?') {
+#ifdef	LONGINT
+					sprintf(xrgstr, "%lu$", mls.s_addr++);
+#else
+					sprintf(xrgstr, "%u$", mls.s_addr++);
+#endif
+					xrg->text = mstring(xrgstr);
+				}
+			}
+			arg = arg->next;
+			drg = drg->next;
+			xrg = xrg->next;
+		}
+		/*
+		 * A Regular Macro
+		 */
+		mcrexe++;
+	} else {
+		/*
+		 * An Inline Macro
+		 */
+		inlexe++;
 	}
 	/*
 	 * Create an asmf structure for nxtline()
@@ -816,7 +1039,7 @@ struct mcrdef * np;
 	asmq->tlevel = tlevel;
 	asmq->lnlist = lnlist;
 	asmq->afp = 0;
-	strcpy(asmq->afn,np->name);
+	strcpy(asmq->afn,np->fname);
 	/*
 	 * Fill in nfp elements
 	 */
@@ -883,7 +1106,7 @@ char *id;
 			}
 		}
 	} else {
-		mcrp->name = mstring("");
+		mcrp->name = "";
 	}
 	mcrp->bgnlst = NULL;
 	mcrp->endlst = NULL;
@@ -893,9 +1116,19 @@ char *id;
 	mcrp->narg = 0;
 	mcrp->bgnarg = NULL;
 	mcrp->endarg = NULL;
+	mcrp->darg = 0;
+	mcrp->bgndrg = NULL;
+	mcrp->enddrg = NULL;
 	mcrp->xarg = 0;
 	mcrp->bgnxrg = NULL;
 	mcrp->endxrg = NULL;
+	mcrp->fname = asmc->afn;
+	mcrp->fline = srcline;
+	if (code == O_MACRO) {
+		mcrcnt++;
+	} else {
+		inlcnt++;
+	}
 	return (mcrp);
 }
 
@@ -911,7 +1144,7 @@ char *id;
  *		mcrdef *np	pointer to macro structure
  *
  *	global variables:
- *		none
+ *		mcrlst		beginning of macro list
  *
  *	functions called:
  *		symeq()		assym.c
@@ -1021,7 +1254,13 @@ FILE *fp;
 		} else {
 			nfp->lstptr = np->bgnlst;
 			nfp->rptidx += 1;
-			mcrline = 0;
+			mcrline = np->fline;
+			if (trcflags & TRC_RPT) {
+				if ((pass == 2) && (lfp != NULL)) {
+					fprintf(lfp, ";R>> (%d) %s (%d)\n", nfp->rptidx + 1, np->fname, np->fline);
+					listhlr(LIST_SRC, SLIST, 0);
+				}
+			}
 		}
 		/*
 		 * Reset IF-ELSE-ENDIF and LIST-NLIST levels
@@ -1239,7 +1478,9 @@ struct	macrofp *nfp;
 			return(0);
 		}
 		arg = arg->next;
-		xrg = xrg->next;
+		if (nfp->np->type == O_MACRO) {
+			xrg = xrg->next;
+		}
 	}
 	return(0);
 }
@@ -1375,7 +1616,7 @@ char *str;
 {
 	int  len;
 	char *p;
-   
+
 	/*
 	 * What we need, including a null.
 	 */
@@ -1414,7 +1655,7 @@ char *str;
  *		char *	pnext		next location in buffer area
  *
  *	global variables:
- *		none
+ *		MCR_MSK			memory boundary mask
  *
  *	functions called:
  *		VOID *	mhunk()		asmcro.c
@@ -1430,7 +1671,7 @@ int n;
 {
 	int  bofst;
 	char *p;
-   
+
         /*
 	 * Memory Boundary Fixup
 	 */
@@ -1450,6 +1691,131 @@ int n;
 	return(p);
 }
 
+/*)Function	VOID	pshmstk(np)
+ *
+ *		struct mcrdef np	pointer to macro
+ *
+ *	The function pshmstk() saves the macro's
+ *	current expansion arguments in order to
+ *	allow recursive entry to the macro.  The
+ *	function also saves the current memory
+ *	parameters to recover the memory used by
+ *	the macro.
+ *
+ *	If the hidden tflag option is > 1 then
+ *	the save memory function is inhibited.
+ *
+ *	local variables:
+ *		struct mstack * mcrstk	parameter structure pointer
+ *
+ *	static variables:
+ *		char *	p		pointer to head of copied string
+ *		char *	pnext		next location in buffer area
+ *
+ *	global variables:
+ *		int		mcrcnt	count of macro definitions
+ *		struct mstack	mstk[]	macro stack
+ *		int		tflag	hidden option flag
+ *
+ *	functions called:
+ *		none
+ *
+ *	side effects:
+ *		Argument and memory state saved.
+ */
+
+VOID
+pshmstk(np)
+struct mcrdef * np;
+{
+	struct mstack * mcrstk;
+
+	mcrstk = &mstk[mlevel++];
+	mcrstk->mcrcnt = mcrcnt;
+	/*
+	 * Save Invocation Arguments
+	 */
+	mcrstk->xarg = np->xarg;
+	mcrstk->bgnxrg = np->bgnxrg;
+	mcrstk->endxrg = np->endxrg;
+	/*
+	 * Save Memory State
+	 */
+	if (tflag <= 1) {
+		mcrstk->mcrmem = mcrmem;
+		mcrstk->pnext = pnext;
+		mcrstk->bytes = bytes;
+	}
+}
+
+/*)Function	VOID	popmstk(np)
+ *
+ *		struct mcrdef np	pointer to macro
+ *
+ *	The function popmstk() restores the macro's
+ *	expansion arguments in order to allow
+ *	recursive entry to the macro.  The
+ *	function also restores the current memory
+ *	parameters to recover the memory used by
+ *	the macro.
+ *
+ *	If the macro definition count (mcrcnt) changes
+ *	during a macro call then the memory used by
+ *	the macro cannot be recovered.  A portion of
+ *	of the memory was used to create new macro(s)
+ *	and must not be overwritten.
+ *
+ *	If the hidden tflag option is > 1 then
+ *	the restore memory function is inhibited.
+ *
+ *	local variables:
+ *		struct mstack * mcrstk	parameter structure pointer
+ *
+ *	static variables:
+ *		char *	p		pointer to head of copied string
+ *		char *	pnext		next location in buffer area
+ *
+ *	global variables:
+ *		int		mcrcnt	count of macro definitions
+ *		struct mstack	mstk[]	macro stack
+ *		int		tflag	hidden option flag
+ *
+ *	functions called:
+ *		none
+ *
+ *	side effects:
+ *		Argument and memory state restored.
+ */
+
+VOID
+popmstk(np)
+struct mcrdef * np;
+{
+	struct mstack * mcrstk;
+
+	mcrstk = &mstk[--mlevel];
+	/*
+	 * Restore Invocation Arguments
+	 */
+	np->xarg = mcrstk->xarg;
+	np->bgnxrg = mcrstk->bgnxrg;
+	np->endxrg = mcrstk->endxrg;
+	/*
+	 * Restore Memory State
+	 */
+	if (tflag <= 1) {
+		/*
+		 * When No New Macros Were Created
+		 * Restore The Memory State
+		 */
+		if (mcrstk->mcrcnt == mcrcnt) {
+			mcrmem = mcrstk->mcrmem;
+			pnext = mcrstk->pnext;
+			bytes = mcrstk->bytes;
+		}
+	}
+}
+
 /*)Function	VOID	mcrinit()
  *
  *	Initialize Macro Processor Variables
@@ -1461,7 +1827,7 @@ int n;
  *	global variables:
  *		struct sym	mls	Macro local symbol
  *		int		mcrfil	macro nesting counter
- *		int		maxmcr	maximum macro nesting emcountered
+ *		int		maxmcr	maximum macro nesting encountered
  *		int		mcrline	current macro line number
  *
  *		struct mcrdef  *mcrlst	link to list of defined macros
@@ -1482,8 +1848,13 @@ mcrinit()
 
 	mcrfil = 0;
 	maxmcr = 0;
+	mlevel = 0;
 	mcrline = 0;
 
+	mcrcnt = 0;
+	inlcnt = 0;
+	mcrexe = 0;
+	inlexe = 0;
 	mcrlst = NULL;
 	mcrp = NULL;
 	mcrmem = NULL;

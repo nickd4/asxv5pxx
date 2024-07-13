@@ -1,7 +1,7 @@
 /* picmch.c */
 
 /*
- *  Copyright (C) 2001-2021  Alan R. Baldwin
+ *  Copyright (C) 2001-2023  Alan R. Baldwin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -48,8 +48,8 @@ static struct badram *br;
 #define	OPCY_SDP	((char) (0xFF))
 #define	OPCY_ERR	((char) (0xFE))
 
-/*	OPCY_NONE	((char) (0x80))	*/
-/*	OPCY_MASK	((char) (0x7F))	*/
+#define	OPCY_NONE	((char) (0x80))
+#define	OPCY_MASK	((char) (0x7F))
 
 #define	OPCY_SBITS	((char) (0xFD))
 #define	OPCY_PMAXR	((char) (0xFC))
@@ -81,6 +81,12 @@ struct mne *mp;
 	struct sym *sp;
 	struct expr e1;
 	struct expr e2;
+
+	/*
+	 * Using Internal Format
+	 * For Cycle Counting
+	 */
+	opcycles = OPCY_NONE;
 
 	op = mp->m_valu;
 	switch (mp->m_type) {
@@ -224,8 +230,6 @@ struct mne *mp;
 			exprmasks(2);
 			/* Set "CSEG" Characteristics */
 			/* To 2-bytes per PC Increment */
-			mp = mlookup("CSEG");
-			mp->m_valu = A_CSEG|A_2BYTE;
 			/* Set _CODE Area Characteristics */
 			area[0].a_flag = A_CSEG|A_2BYTE|A_BNK;
 			break;
@@ -233,8 +237,6 @@ struct mne *mp;
 			exprmasks(4);
 			/* Set "CSEG" Characteristics */
 			/* To 1-byte per PC Increment */
-			mp = mlookup("CSEG");
-			mp->m_valu = A_CSEG|A_1BYTE;
 			/* Set _CODE Area Characteristics */
 			area[0].a_flag = A_CSEG|A_1BYTE|A_BNK;
 			break;
@@ -355,6 +357,11 @@ struct mne *mp;
 		}
 		break;
 	}
+	/*
+	 * Translate To External Format
+	 */
+	if (opcycles == OPCY_NONE) { opcycles  =  CYCL_NONE; } else
+	if (opcycles  & OPCY_NONE) { opcycles |= (CYCL_NONE | 0x3F00); }
 }
 
 
@@ -542,10 +549,10 @@ struct mne *mp;
 	}
 
 	if (opcycles == OPCY_NONE) {
-		switch(cb[0] & 0x000F) {
+		switch(cb[1] & 0x000F) {
 		case 0x02:
 		case 0x03:
-			if ((cb[1] & 0xC0) == 0xC0) {
+			if ((cb[0] & 0xC0) == 0xC0) {
 				opcycles = 2;
 			} else {
 				opcycles = 1;
@@ -752,7 +759,7 @@ struct mne *mp;
 	}
 
 	if (opcycles == OPCY_NONE) {
-		switch((cb[0] >> 2) & 0x000F) {
+		switch((cb[1] >> 2) & 0x000F) {
 		case 0x02:
 		case 0x03:
 			if ((cb[0] & 0x03) == 0x03) {
@@ -768,8 +775,8 @@ struct mne *mp;
 		case 0x0B:
 		case 0x0D:	opcycles = 2;	break;
 		default:	opcycles = 1;
-			if ((cb[0] == 0) &&
-			   ((cb[1] == 0x08) || (cb[1] == 0x09))) {
+			if ((cb[1] == 0) &&
+			   ((cb[0] == 0x08) || (cb[0] == 0x09))) {
 				opcycles = 2;
 			}			break;
 		}
@@ -1143,9 +1150,9 @@ struct mne *mp;
 	}
 
 	if (opcycles == OPCY_NONE) {
-		opcycles = p16pg1[cb[0] & 0xFF];
+		opcycles = p16pg1[cb[1] & 0xFF];
 		if ((opcycles & OPCY_NONE) && (opcycles & OPCY_MASK)) {
-			opcycles = P16Page[opcycles & OPCY_MASK][cb[1] & 0xFF];
+			opcycles = P16Page[opcycles & OPCY_MASK][cb[0] & 0xFF];
 		}
 	}
 }
@@ -1224,7 +1231,7 @@ pic20bit(mp)
 struct mne *mp;
 {
 	a_uint op;
-	v_sint v1;
+	int v1;
 	int c;
 	int t1, t2;
 	int r_mode;
@@ -1558,7 +1565,7 @@ struct mne *mp;
 		if (pic_goto) {
 			/* Use PIC Mode for Branch */
 			if (is_abs(&e1)) {
-				v1 = e1.e_addr;
+				v1 = (int) e1.e_addr;
 				if ((v1 < -1024) || (v1 > 1023))
 				xerr('a', "Branching Range Exceeded.");
 				outaw(op + (v1 & 0x7FF));
@@ -1567,8 +1574,7 @@ struct mne *mp;
 			}
 		} else {
 			/* Use ASxxxx Mode for Branch */
-			if (mchpcr(&e1)) {
-				v1 = e1.e_addr - dot.s_addr - 2;
+			if (mchpcr(&e1, &v1, 2)) {
 				if ((v1 < -2048) || (v1 > 2047))
 					xerr('a', "Branching Range Exceeded.");
 				outaw(op + ((v1 >> 1) & 0x7FF));
@@ -1587,7 +1593,7 @@ struct mne *mp;
 		if (pic_goto) {
 			/* Use PIC Mode for Branch */
 			if (is_abs(&e1)) {
-				v1 = e1.e_addr;
+				v1 = (int) e1.e_addr;
 				if ((v1 < -128) || (v1 > 127))
 					xerr('a', "Branching Range Exceeded.");
 				outaw(op + (v1 & 0xFF));
@@ -1596,8 +1602,7 @@ struct mne *mp;
 			}
 		} else {
 			/* Use ASxxxx Mode for Branch */
-			if (mchpcr(&e1)) {
-				v1 = e1.e_addr - dot.s_addr - 2;
+			if (mchpcr(&e1, &v1, 2)) {
 				if ((v1 < -256) || (v1 > 255))
 					xerr('a', "Branching Range Exceeded.");
 				outaw(op + ((v1 >> 1) & 0xFF));
@@ -1794,9 +1799,9 @@ struct mne *mp;
 	}
 
 	if (opcycles == OPCY_NONE) {
-		opcycles = p20pg1[cb[0] & 0xFF];
+		opcycles = p20pg1[cb[1] & 0xFF];
 		if ((opcycles & OPCY_NONE) && (opcycles & OPCY_MASK)) {
-			opcycles = P20Page[opcycles & OPCY_MASK][cb[1] & 0xFF];
+			opcycles = P20Page[opcycles & OPCY_MASK][cb[0] & 0xFF];
 		}
 	}
 }
@@ -1806,10 +1811,28 @@ struct mne *mp;
  * Branch/Jump PCR Mode Check
  */
 int
-mchpcr(esp)
+mchpcr(esp, v, n)
 struct expr *esp;
+int *v;
+int n;
 {
 	if (esp->e_base.e_ap == dot.s_area) {
+		if (v != NULL) {
+#if 1
+			/* Allows branching from top-to-bottom and bottom-to-top */
+ 			*v = (int) (esp->e_addr - dot.s_addr - n);
+			/* only bits 'a_mask' are significant, make circular */
+			if (*v & s_mask) {
+				*v |= (int) ~a_mask;
+			}
+			else {
+				*v &= (int) a_mask;
+			}
+#else
+			/* Disallows branching from top-to-bottom and bottom-to-top */
+			*v = (int) ((esp->e_addr & a_mask) - (dot.s_addr & a_mask) - n);
+#endif
+		}
 		return(1);
 	}
 	if (esp->e_flag==0 && esp->e_base.e_ap==NULL) {

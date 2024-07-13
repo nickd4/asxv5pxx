@@ -124,12 +124,18 @@ struct expr *esp;
 			&& (esp->e_base.e_ap == NULL)
 			&& ((esp->e_addr & ~0xFF) == zpgadr)) {
 			esp->e_mode = S_DIR;
-		}
-		if ((!esp->e_flag)
-			&& (zpg != NULL)
-			&& (esp->e_base.e_ap == zpg)
-			&& ((esp->e_addr & ~0xFF) == zpgadr)) {
-			esp->e_mode = S_DIR;
+		} else {
+			if (zpg != NULL) {
+				if (esp->e_flag) {
+					if (esp->e_base.e_sp->s_area == zpg) {
+						esp->e_mode = S_DIR;	/* ___  (*)arg */
+					}
+				} else {
+					if (esp->e_base.e_ap == zpg) {
+						esp->e_mode = S_DIR;	/* ___  (*)arg */
+					}
+				}
+			}
 		}
 		if (comma(0)) {
 			if (admode(auto2)) {

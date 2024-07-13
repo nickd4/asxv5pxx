@@ -19,13 +19,16 @@
    Starting  an  ASxxxx assembler without any arguments provides
 the following option list and then exits:  
 
-Usage: [-Options] [-Option with arg] file
-Usage: [-Options] [-Option with arg] outfile file1 [file2 ...]
+Usage: [-Options] [-Option with arg] file1 [file2 ...]
   -h   or NO ARGUMENTS  Show this help list
 Output:
-  -l   Create list   file/outfile[.lst]
-  -o   Create object file/outfile[.rel]
-  -s   Create symbol file/outfile[.sym]
+  -o   Enable  object output  (-o+ change file1[.rel])
+    -o+  Conditional Options   -o+[ ][name][.ext]
+    '-o+.ext'      (or)  '-o+  .ext'      ->  file1.ext
+    '-o+name'      (or)  '-o+  name'      ->  name[.rel]
+    '-o+name.ext'  (or)  '-o+  name.ext'  ->   name.ext
+  -l   Create list   file1[.lst]   (file1  <-  name)
+  -s   Create symbol file1[.sym]   (file1  <-  name)
 Listing:
   -d   Decimal listing
   -q   Octal   listing
@@ -35,12 +38,14 @@ Listing:
   -c   Disable instruction cycle count in listing
   -f   Flag relocatable references by  `   in listing file
   -ff  Flag relocatable references by mode in listing file
+  -k   Disable error messages to listing file
   -p   Disable automatic listing pagination
   -u   Disable .list/.nlist processing
   -w   Wide listing format for symbol table
 Assembly:
   -i   Insert assembler line before input file(s)
   -v   Enable out of range signed / unsigned errors
+  -n#  Set the maximum number of 'Pass 2' scans
 Symbols:
   -a   All user symbols made global
   -g   Undefined symbols made global
@@ -55,19 +60,14 @@ Debugging:
 require the option(s) and file(s) arguments to follow the ASxxxx
 assembler name:  
 
-  as6809 -[Options] file
-
-  as6809 [-Options] outfile file1 [file2 ...]
+  as6809 [-Options] [-Option with arg] file1 [file2 ...]
 
 
 Some  systems  may  request the arguments after the assembler is
 started at a system specific prompt:  
 
   as6809
-  argv: -[Options] file
-
-  as6809
-  argv: [-Options] outfile file1 [file2 ...]
+  argv: [-Options] [-Option with arg] file1 [file2 ...]
 
 
 The ASxxxx options in some more detail:  
@@ -75,14 +75,28 @@ The ASxxxx options in some more detail:
         -h      List the ASxxxx options
 
     Output:
-        -l      create list   output (out)file.lst
+        -o      enable  object output file1.rel
+
+        The object output file name and/or extension can
+        be changed as desired using the -o+ option.
+        The list and symbol file names are changed to match
+        that of the object output file name.  The list and
+        symbol file extensions cannot be changed as the
+        linker requires a .LST extension in order to create
+        the relocated, .RST, listing file.
+
+          -o+   Conditional Options -o+[ ][name][.ext]
+          '-o+.ext'      (or)  '-o+ .ext'      ->  file1.ext
+          '-o+name'      (or)  '-o+ name'      ->   name.rel
+          '-o+name.ext]  (or)  '-o+ name.ext'  ->   name.ext
+
+        -l      create list   file1[.lst] (file1 <- name)
 
                 If -s (symbol table output) is not
-                specified the symbol table is included
-                at the end of the listing file.
+                specified then the symbol table is
+                included at the end of the listing file.
 
-        -o      create object output (out)file.rel
-        -s      create symbol output (out)file.sym
+        -s      create symbol file1[.sym] (file1 <- name)
 
     Listing:
         -d      decimal listing
@@ -122,6 +136,11 @@ The ASxxxx options in some more detail:
                 rsRS    signed,
                 pqPQ    program counter relative.
 
+        -k      disable error messages to listing file
+
+                This option inhibits the listing of
+                error messages in the listing file
+
         -p      disable listing pagination
 
                 This option inhibits the generation
@@ -150,7 +169,7 @@ The ASxxxx options in some more detail:
                 If the insert contains white space then
                 delimit the insert.  Inserted lines are
                 by default not listed. To list an inserted
-                line preceed the insert with a .list insert.
+                line preced the insert with a .list insert.
                 e.g.:   -i .list -i BUILD=2
 
         -v      Enable out of range signed / unsigned errors
@@ -163,6 +182,12 @@ The ASxxxx options in some more detail:
                 for calculations. (e.g. for a 2-byte machine
                 -32768 and 32768 are both represented as 0x8000)
 
+        -n#     Set the maximum number of 'Pass 2' scans
+
+                Specify a maximum number of 'Pass 2' scans
+                to resolve multiple level forward referencing
+                and variable length instruction formats.
+                
     Symbols:
         -a      all user symbols made global
 
@@ -180,7 +205,6 @@ The ASxxxx options in some more detail:
     Debugging:
         -j      enable NOICE debug symbols
         -y      enable SDCC debug symbols
-
 
    The file name for the .lst, .rel, .hlr, and .sym files is the
 first file name specified in the command line.  All output files
@@ -201,9 +225,16 @@ which are not shown in the usage message.  These are:
         -rr     Also include non listed line
                 numbers in the .hlr hint file
 
-        -t      Show Include File and Macro Expansion
-                levels and memory allocations for
+        -t      Show Assembler Pass Count (-n#),
+                Include File and Macro Expansion
+                levels, and memory allocations for
                 the assembler and macro processor
+
+        -tt     Show Assembler Pass Count (-n#),
+                Include File and Macro Expansion
+                levels, and memory allocations for the
+                assembler and macro processor without
+                the macro allocation optimization
 
 </PRE></B></H4>
 <H5><A HREF="asmblr.htm#Index">  Return to the Assembler Index</A></H5>
@@ -294,7 +325,7 @@ second line lists the actual line in error followed by  a  third
 line containing the more specific error.  
 
    The  listing  file (.lst) will have the first and third lines
-of the error message inserted preceeding the line containing the
+of the error message inserted preceding the line containing  the
 error.  
 
 </PRE></B></H4>
@@ -313,7 +344,7 @@ page of output contains a five line header:
 
      1.  The ASxxxx program name and page number 
 
-     2.  Assembler Radix and Address Bits 
+     2.  Assembler Radix, Address Bits, Date, and Time
 
      3.  Title from a .title directive (if any) 
 
@@ -370,9 +401,9 @@ source line with substitutions.
 
    Two  data  field  options  are  available to flag those bytes
 which will be relocated by the linker.   If  the  -f  option  is
-specified  then  each  byte to be relocated will be preceeded by
-the '`' character.  If the -ff option  is  specified  then  each
-byte  to  be relocated will be preceeded by one of the following
+specified then each byte to be relocated will be preceded by the
+'`' character.  If the -ff option is specified then each byte to
+be   relocated   will  be  preceded  by  one  of  the  following
 characters:  
 
      1.  *   paged relocation 
@@ -513,7 +544,7 @@ object file.
 <H4><B><PRE>
    The  hint file is an ascii file containing information needed
 by the linker to convert the listing file into a relocated list-
-ing  file.   Each  line  in the .hlr file coresponds to a single
+ing  file.   Each  line in the .hlr file corresponds to a single
 line in the listing file.  The text line usually contains 3 or 4
 parameters  in  the radix selected for the assembler as shown in
 the following table:  
@@ -597,6 +628,6 @@ action.
 <B>...  Home Page</B></P>
 </H4>
 
-<H6><P><B>Last Updated: March 2021</B></P></H6>
+<H6><P><B>Last Updated: September 2023</B></P></H6>
 </BODY> 
 </HTML>

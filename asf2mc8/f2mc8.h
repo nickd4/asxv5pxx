@@ -111,11 +111,12 @@ struct adsym
  * Set Direct Pointer
  */
 #define	S_SDP	80
+#define	S_PGD	81
 
 /*
  * Machine Type
  */
-#define	S_CPU	81
+#define	S_CPU	82
 
 /*
  * Processor Types (S_CPU)
@@ -139,7 +140,7 @@ extern	int		srch(char *str);
 	/* f8mch.c */
 extern	struct  area	*zpg;
 extern	VOID		machine(struct mne *mp);
-extern	int		mchpcr(struct expr *esp);
+extern	int		mchpcr(struct expr *esp, int *v, int n);
 extern	VOID		minit(void);
 
 #else

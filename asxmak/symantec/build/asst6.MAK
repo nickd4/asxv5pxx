@@ -25,7 +25,7 @@ LNK		= LINK
 DLLS		= 
 
 HEADERS		= ..\..\..\ASXXSRC\asxxxx.h ..\..\..\ASST6\st6.h C:\SC\INCLUDE\stdlib.h  \
-		C:\SC\INCLUDE\stdio.h C:\SC\INCLUDE\setjmp.h C:\SC\INCLUDE\string.h 
+		C:\SC\INCLUDE\stdio.h C:\SC\INCLUDE\setjmp.h C:\SC\INCLUDE\string.h C:\SC\INCLUDE\time.h 
 
 DEFFILE		= asst6.DEF
 

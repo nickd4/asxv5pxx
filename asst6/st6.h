@@ -108,7 +108,7 @@ extern	int		srch(char *str);
 
 	/* ST6mch.c */
 extern	VOID		machine(struct mne *mp);
-extern	int		mchpcr(struct expr *esp);
+extern	int		mchpcr(struct expr *esp, int *v, int n);
 extern	VOID		minit(void);
 extern	int		valu_err(struct expr *e, int n);
 

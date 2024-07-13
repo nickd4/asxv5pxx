@@ -1,8 +1,6 @@
 	.title	AS8x300 Assembler Test
 	.sbttl	Absolute Value Assembly
 
-	.xerr	2
-
 	.radix	D
 
 	; Define Areas and Banks

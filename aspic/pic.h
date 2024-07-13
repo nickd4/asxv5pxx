@@ -194,7 +194,7 @@ extern	VOID		mch12fsr(struct expr *esp);
 extern	VOID		mch14fsr(struct expr *esp);
 extern	VOID		mch16fsr(struct expr *esp);
 extern	VOID		mchdpm(struct expr *esp);
-extern	int		mchpcr(struct expr *esp);
+extern	int		mchpcr(struct expr *esp, int *v, int n);
 extern	int		mchramchk(struct expr *esp);
 extern	VOID		minit(void);
 extern	VOID		pic12bit(struct mne *mp);

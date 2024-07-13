@@ -53,6 +53,8 @@
 	;   at assembly or link time.
 	;
 
+	.setdp	0xFF00
+
 	.globl	value
 	.globl	exdata
 	.globl	start

@@ -6,6 +6,10 @@ del ..\..\..\asxtst\asmt2bhi.lst
 ..\exe\as2650.exe -glacxff ..\..\..\asxtst\asmt2bhi.asm
 ..\exe\asxscn.exe ..\..\..\asxtst\asmt2bhi.lst
 
+del ..\..\..\asxtst\asmt2bhi.lst
+..\exe\as4040.exe -glacxff ..\..\..\asxtst\asmt2bhi.asm
+..\exe\asxscn.exe ..\..\..\asxtst\asmt2bhi.lst
+
 del ..\..\..\asxtst\asmt2blo.lst
 ..\exe\as430.exe -glacxff ..\..\..\asxtst\asmt2blo.asm
 ..\exe\asxscn.exe ..\..\..\asxtst\asmt2blo.lst
@@ -117,6 +121,14 @@ del ..\..\..\asxtst\asmt4blo.lst
 ..\exe\asavr.exe -glacxff ..\..\..\asxtst\asmt4blo ..\..\..\asxtst\a32bit.asm ..\..\..\asxtst\asmt4blo.asm
 ..\exe\asxscn.exe -4 ..\..\..\asxtst\asmt4blo.lst
 
+del ..\..\..\asxtst\asmt2bhi.lst
+..\exe\ascop4.exe -glacxff ..\..\..\asxtst\asmt2bhi.asm
+..\exe\asxscn.exe ..\..\..\asxtst\asmt2bhi.lst
+
+del ..\..\..\asxtst\asmt2bhi.lst
+..\exe\ascop8.exe -glacxff ..\..\..\asxtst\asmt2bhi.asm
+..\exe\asxscn.exe ..\..\..\asxtst\asmt2bhi.lst
+
 del ..\..\..\asxtst\asmt3blo.lst
 ..\exe\asez80.exe -glacxff ..\..\..\asxtst\asmt3blo.asm
 ..\exe\asxscn.exe -3 ..\..\..\asxtst\asmt3blo.lst
@@ -151,6 +163,10 @@ del ..\..\..\asxtst\asmt4blo.lst
 del ..\..\..\asxtst\asmt2blo.lst
 ..\exe\asrab.exe -glacxff ..\..\..\asxtst\asmt2blo.asm
 ..\exe\asxscn.exe ..\..\..\asxtst\asmt2blo.lst
+
+del ..\..\..\asxtst\asmt2bhi.lst
+..\exe\asrs08.exe -glacxff ..\..\..\asxtst\asmt2bhi.asm
+..\exe\asxscn.exe ..\..\..\asxtst\asmt2bhi.lst
 
 del ..\..\..\asxtst\asmt2bhi.lst
 ..\exe\asscmp.exe -glacxff ..\..\..\asxtst\asmt2bhi.asm
@@ -211,6 +227,15 @@ del ..\..\..\as2650\t2650.rst
 ..\exe\asxscn.exe ..\..\..\as2650\t2650.lst
 ..\exe\aslink.exe -nxu -g xADDR=0 -g xBADD=0 -g xDATA2=0 -g xDATA8=0 -g xP=0 ..\..\..\as2650\t2650.rel
 ..\exe\asxscn.exe -i ..\..\..\as2650\t2650.rst
+
+del ..\..\..\as4040\t4040.rel
+del ..\..\..\as4040\t4040.lst
+del ..\..\..\as4040\t4040.hlr
+del ..\..\..\as4040\t4040.rst
+..\exe\as4040.exe -gloacxff ..\..\..\as4040\t4040.asm
+..\exe\asxscn.exe ..\..\..\as4040\t4040.lst
+..\exe\aslink.exe -nf ..\..\..\as4040\t4040.lnk
+..\exe\asxscn.exe -i ..\..\..\as4040\t4040.rst
 
 del ..\..\..\as430\t430.rel
 del ..\..\..\as430\t430.lst
@@ -362,14 +387,14 @@ del ..\..\..\as78k0\t78k0.rst
 ..\exe\aslink.exe -nxuf ..\..\..\as78k0\t78k0.lnk
 ..\exe\asxscn.exe -i ..\..\..\as78k0\t78k0.rst
 
-del ..\..\..\as78k0s\t78k0s.rel
-del ..\..\..\as78k0s\t78k0s.lst
-del ..\..\..\as78k0s\t78k0s.hlr
-del ..\..\..\as78k0s\t78k0s.rst
-..\exe\as78k0s.exe -gloacxff ..\..\..\as78k0s\t78k0s.asm
-..\exe\asxscn.exe ..\..\..\as78k0s\t78k0s.lst
-..\exe\aslink.exe -nxuf ..\..\..\as78k0s\t78k0s.lnk
-..\exe\asxscn.exe -i ..\..\..\as78k0s\t78k0s.rst
+del ..\..\..\as78k0s\t78ks.rel
+del ..\..\..\as78k0s\t78ks.lst
+del ..\..\..\as78k0s\t78ks.hlr
+del ..\..\..\as78k0s\t78ks.rst
+..\exe\as78k0s.exe -gloacxff ..\..\..\as78k0s\t78ks.asm
+..\exe\asxscn.exe ..\..\..\as78k0s\t78ks.lst
+..\exe\aslink.exe -nxuf ..\..\..\as78k0s\t78ks.lnk
+..\exe\asxscn.exe -i ..\..\..\as78k0s\t78ks.rst
 
 del ..\..\..\as8008\t08.rel
 del ..\..\..\as8008\t08.lst
@@ -431,6 +456,24 @@ del ..\..\..\asavr\tavr.rst
 ..\exe\aslink.exe -nxu -g zero=0 -g blbl=s_bra -g rlbl=s_rjmp ..\..\..\asavr\tavr.rel
 ..\exe\asxscn.exe -4i ..\..\..\asavr\tavr.rst
 
+del ..\..\..\ascop4\tcop4.rel
+del ..\..\..\ascop4\tcop4.lst
+del ..\..\..\ascop4\tcop4.hlr
+del ..\..\..\ascop4\tcop4.rst
+..\exe\ascop4.exe -gloacxff ..\..\..\ascop4\tcop4.asm
+..\exe\asxscn.exe ..\..\..\ascop4\tcop4.lst
+..\exe\aslink.exe -nxu -a COP4A=0x0000 -a COP4B=0x0040 -g x$=0x0000 ..\..\..\ascop4\tcop4.rel
+..\exe\asxscn.exe -i ..\..\..\ascop4\tcop4.rst
+
+del ..\..\..\ascop8\tcop8.rel
+del ..\..\..\ascop8\tcop8.lst
+del ..\..\..\ascop8\tcop8.hlr
+del ..\..\..\ascop8\tcop8.rst
+..\exe\ascop8.exe -gloacxff ..\..\..\ascop8\tcop8.asm
+..\exe\asxscn.exe ..\..\..\ascop8\tcop8.lst
+..\exe\aslink.exe -nxu -g x$=0x0000 ..\..\..\ascop8\tcop8.rel
+..\exe\asxscn.exe -i ..\..\..\ascop8\tcop8.rst
+
 del ..\..\..\asez80\tez80.rel
 del ..\..\..\asez80\tez80.lst
 del ..\..\..\asez80\tez80.hlr
@@ -464,8 +507,11 @@ del ..\..\..\asf8\tf8ext.rst
 ..\exe\asxscn.exe -i ..\..\..\asf8\tf8seq.rst
 
 del ..\..\..\asgb\tgb.lst
-..\exe\asgb.exe -glacxff ..\..\..\asgb\tgb.asm
+del ..\..\..\asgb\tgb.rst
+..\exe\asgb.exe -glacoxff ..\..\..\asgb\tgb.asm
 ..\exe\asxscn.exe ..\..\..\asgb\tgb.lst
+..\exe\aslink -nxu -g xn8=0 -g xp8=0xFF00 -g xa8=0 -g xd8=0 -g xa16=0 -g xd16=0 ..\..\..\asgb\tgb.rel
+..\exe\asxscn -i ..\..\..\asgb\tgb.rst
 
 del ..\..\..\ash8\th8.lst
 ..\exe\ash8.exe -glacxff ..\..\..\ash8\th8.asm
@@ -506,6 +552,15 @@ del ..\..\..\asrab\trabg.rst
 ..\exe\asrab.exe -gloabcxff ..\..\..\asrab\trabg.asm
 ..\exe\aslink.exe -nxu -g offset=0x33 -g n=0x20 -g mn=0x0584 ..\..\..\asrab\trabg.rel
 ..\exe\asxscn.exe ..\..\..\asrab\trabg.rst
+
+del ..\..\..\asrs08\trs08.rel
+del ..\..\..\asrs08\trs08.lst
+del ..\..\..\asrs08\trs08.hlr
+del ..\..\..\asrs08\trs08.rst
+..\exe\asrs08.exe -loxff ..\..\..\asrs08\trs08.asm
+..\exe\asxscn.exe ..\..\..\asrs08\trs08.lst
+..\exe\aslink.exe -nxu -g Ext=0 ..\..\..\asrs08\trs08.rel
+..\exe\asxscn.exe -i ..\..\..\asrs08\trs08.rst
 
 del ..\..\..\asscmp\tscmp.rel
 del ..\..\..\asscmp\tscmp.lst

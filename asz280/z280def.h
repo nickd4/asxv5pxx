@@ -382,7 +382,7 @@ extern	int		srch(char *str);
 	/* z280mch.c */
 extern	a_uint		debug;	/* ARB */
 extern	VOID		machine(struct mne *mp);
-extern	int		mchpcr(struct expr *esp);
+extern	int		mchpcr(struct expr *esp, int *v, int n);
 extern	VOID		minit(void);
 extern	int		nreg(a_uint m);
 extern	int		generate(struct expr *arg, a_uint marg, INT32 op, int byt);	/* ARB */

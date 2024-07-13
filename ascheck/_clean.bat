@@ -12,6 +12,9 @@ cd ..
 cd bank
 call ..\..\_xfiles.bat
 cd ..
+cd bankex
+call ..\..\_xfiles.bat
+cd ..
 cd bndry
 call ..\..\_xfiles.bat
 cd ..
@@ -62,6 +65,12 @@ cd r_pagn
 call ..\..\_xfiles.bat
 cd ..
 cd schk
+call ..\..\_xfiles.bat
+cd ..
+cd scnrchk
+call ..\..\_xfiles.bat
+cd ..
+cd strings
 call ..\..\_xfiles.bat
 cd ..
 cd tchk

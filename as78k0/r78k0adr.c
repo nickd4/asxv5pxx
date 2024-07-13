@@ -1,7 +1,7 @@
 /* R78K0ADR.C */
 
 /*
- *  Copyright (C) 2019-2021  Alan R. Baldwin
+ *  Copyright (C) 2019-2022  Alan R. Baldwin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -32,7 +32,6 @@ int *aindx;
 {
 	int amode;
 	int c;
-	a_uint v;
 	char *p;
 
 	/* fix order of '<', '>', and '#' */
@@ -86,18 +85,9 @@ int *aindx;
 	} else
 	if (c == '@') {
 		expr(esp, 0);
+		amode = addrmode(esp);
 		if (is_abs(esp)) {
-			v = (esp->e_addr & a_mask);
-			/*
-			 * SADDR Addressing 0xFE20 to 0xFF1F (256 bytes)
-			 */
-#ifdef	LONGINT
-			if ((v >= (a_uint) 0x0000FE20l) && (v <= (a_uint) 0x0000FF1Fl)) {
-#else
-			if ((v >= (a_uint) 0x0000FE20) && (v <= (a_uint) 0x0000FF1F)) {
-#endif
-				;
-			} else {
+			if((amode != S_SADDR) && (amode != S_SADFR)) {
 				xerr('a', "Address is outside of SADDR Range");
 			}
 		}
@@ -105,28 +95,9 @@ int *aindx;
 	} else
 	if (c == '*') {
 		expr(esp, 0);
+		amode = addrmode(esp);
 		if (is_abs(esp)) {
-			v = (esp->e_addr & a_mask);
-			/*
-			 * SFR Addressing 0xFFE0 to 0xFFFF ( 32 bytes)
-			 */
-#ifdef	LONGINT
-			if ((v >= (a_uint) 0x0000FFE0l) && (v <= (a_uint) 0x0000FFFFl)) {
-#else
-			if ((v >= (a_uint) 0x0000FFE0) && (v <= (a_uint) 0x0000FFFF)) {
-#endif
-				;
-			} else
-			/*
-			 * SFR Addressing 0xFF00 to 0xFFCF (208 bytes)
-			 */
-#ifdef	LONGINT
-			if ((v >= (a_uint) 0x0000FF00l) && (v <= (a_uint) 0x0000FFCFl)) {
-#else
-			if ((v >= (a_uint) 0x0000FF00) && (v <= (a_uint) 0x0000FFCF)) {
-#endif
-				;
-			} else {
+			if((amode != S_SFR) && (amode != S_SADFR)) {
 				xerr('a', "Address is outside of SFR Range");
 			}
 		}
@@ -134,45 +105,80 @@ int *aindx;
 	} else {
 		unget(c);
 		expr(esp, 0);
-		if (is_abs(esp)) {
-			v = (esp->e_addr & a_mask);
-			/*
-			 * SADDR Addressing 0xFE20 to 0xFF1F (256 bytes)
-			 */
-#ifdef	LONGINT
-			if ((v >= (a_uint) 0x0000FE20l) && (v <= (a_uint) 0x0000FF1Fl)) {
-#else
-			if ((v >= (a_uint) 0x0000FE20) && (v <= (a_uint) 0x0000FF1F)) {
-#endif
-				amode = S_SADDR;
-			} else
-			/*
-			 * SFR Addressing 0xFFE0 to 0xFFFF ( 32 bytes)
-			 */
-#ifdef	LONGINT
-			if ((v >= (a_uint) 0x0000FFE0l) && (v <= (a_uint) 0x0000FFFFl)) {
-#else
-			if ((v >= (a_uint) 0x0000FFE0) && (v <= (a_uint) 0x0000FFFF)) {
-#endif
-				amode = S_SFR;
-			} else
-			/*
-			 * SFR Addressing 0xFF00 to 0xFFCF (208 bytes)
-			 */
-#ifdef	LONGINT
-			if ((v >= (a_uint) 0x0000FF00l) && (v <= (a_uint) 0x0000FFCFl)) {
-#else
-			if ((v >= (a_uint) 0x0000FF00) && (v <= (a_uint) 0x0000FFCF)) {
-#endif
-				amode = S_SFR;
-			} else {
-				amode = S_EXT;
-			}
-		} else {
-			amode = S_EXT;
-		}
+		amode = addrmode(esp);
 	}
 	return (amode);
+}
+
+int
+addrmode(esp)
+struct expr *esp;
+{
+	a_uint v;
+
+	if (is_abs(esp)) {
+		v = (esp->e_addr & a_mask);
+		/*
+		 * SADDR Addressing 0xFE20 to 0xFEFF (240 bytes)
+		 */
+#ifdef	LONGINT
+		if ((v >= (a_uint) 0x0000FE20l) && (v <= (a_uint) 0x0000FEFFl)) {
+#else
+		if ((v >= (a_uint) 0x0000FE20) && (v <= (a_uint) 0x0000FEFF)) {
+#endif
+			return(S_SADDR);
+		} else
+		/*
+		 * SADDR/SFR Addressing 0xFF00 to 0xFF1F (16 bytes)
+		 */
+#ifdef	LONGINT
+		if ((v >= (a_uint) 0x0000FF00l) && (v <= (a_uint) 0x0000FF1Fl)) {
+#else
+		if ((v >= (a_uint) 0x0000FF00) && (v <= (a_uint) 0x0000FF1F)) {
+#endif
+			return(S_SADFR);
+		} else
+		/*
+		 * SFR Addressing 0xFF20 to 0xFFCF (192 bytes)
+		 */
+#ifdef	LONGINT
+		if ((v >= (a_uint) 0x0000FF20l) && (v <= (a_uint) 0x0000FFCFl)) {
+#else
+		if ((v >= (a_uint) 0x0000FF20) && (v <= (a_uint) 0x0000FFCF)) {
+#endif
+			return(S_SFR);
+		} else 
+		/*
+		 * SFR Addressing 0xFFE0 to 0xFFFF ( 32 bytes)
+		 */
+#ifdef	LONGINT
+		if ((v >= (a_uint) 0x0000FFE0l) && (v <= (a_uint) 0x0000FFFFl)) {
+#else
+		if ((v >= (a_uint) 0x0000FFE0) && (v <= (a_uint) 0x0000FFFF)) {
+#endif
+			return(S_SFR);
+		} else
+		/*
+		 * Extended Addressing 0x0000 to 0xFE17 (65040 bytes) 
+		 * Extended Addressing 0xFFD0 to 0xFFDF (16 bytes)
+		 */
+		{
+			return(S_EXT);
+		}
+	} else {
+		if (zpg != NULL) {
+			if (esp->e_flag) {
+				if (esp->e_base.e_sp->s_area == zpg) {
+					return(S_SFR);	/* ___  (*)arg */
+				}
+			} else {
+				if (esp->e_base.e_ap == zpg) {
+					return(S_SFR);	/* ___  (*)arg */
+				}
+			}
+		}
+		return(S_EXT);
+	}
 }
 
 int
@@ -343,7 +349,6 @@ int flag;
 {
 	char *iptr;
 	int amode;
-	a_uint v;
 
 	iptr = ip;
 	/* Rn.---- */
@@ -391,27 +396,7 @@ int flag;
 		}
 	} else {
 		expr(esp, 0);
-		if (is_abs(esp)) {
-			v = (esp->e_addr & a_mask);
-#ifdef	LONGINT
-			if ((v >= (a_uint) 0x0000FE20l) && (v <= (a_uint) 0x0000FF1Fl)) {
-#else
-			if ((v >= (a_uint) 0x0000FE20) && (v <= (a_uint) 0x0000FF1F)) {
-#endif
-				amode = S_SADDR;
-			} else
-#ifdef	LONGINT
-			if ((v >= (a_uint) 0x0000FF20l) && (v <= (a_uint) 0x0000FFFFl)) {
-#else
-			if ((v >= (a_uint) 0x0000FF20) && (v <= (a_uint) 0x0000FFFF)) {
-#endif
-				amode = S_SFR;
-			} else {
-				amode = S_EXT;
-			}
-		} else {
-			amode = S_EXT;
-		}
+		amode = addrmode(esp);
 	}
 	return(amode);
 }

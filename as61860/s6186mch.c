@@ -35,8 +35,8 @@ char	*dsft	= "asm";
 #define	OPCY_SDP	((char) (0xFF))
 #define	OPCY_ERR	((char) (0xFE))
 
-/*	OPCY_NONE	((char) (0x80))	*/
-/*	OPCY_MASK	((char) (0x7F))	*/
+#define	OPCY_NONE	((char) (0x80))
+#define	OPCY_MASK	((char) (0x7F))
 
 #define	OPCY_SBASIC	((char) (0xFD))
 
@@ -72,7 +72,13 @@ struct mne *mp;
 {
 	unsigned int op;
 	struct expr e1, e2;
-       	int c, d, t1;
+       	int c, d, t1, v1;
+
+	/*
+	 * Using Internal Format
+	 * For Cycle Counting
+	 */
+	opcycles = OPCY_NONE;
 
 	clrexpr(&e1);
 	clrexpr(&e2);
@@ -149,6 +155,7 @@ struct mne *mp;
 		if (t1 != S_EXT) {
 			xerr('a', "Invalid Addressing Mode.");
 		}
+		outab(op);
 		if (is_abs(&e1)) {
 			/*
 			 *	JRP	pbra-(.+1)
@@ -163,26 +170,25 @@ struct mne *mp;
 			 *	IY
 			 * pbra:
 			 */
-			;
+			v1 = (int) e1.e_addr;
 		} else
-		if (mchpcr(&e1)) {
+		if (mchpcr(&e1, &v1, 0)) {
 			/*
 			 *	JRP	pbra
 			 *		...
 			 * pbra:
 			 */
-			e1.e_addr = e1.e_addr - (dot.s_addr + 1);
 		} else {
 			/*
 			 *	LOOP	external
 			 */
 			abscheck(&e1);
+			v1 = (int) e1.e_addr;
 		}
-		outab(op);
-		if (e1.e_addr & ~0xFF) {
+		if (v1 & ~0xFF) {
 			xerr('a', "Value > 255.");
 		}
-		outab(e1.e_addr & 0xFF);
+		outab(v1 & 0xFF);
 		break;
 
 	case S_JRM:
@@ -190,6 +196,7 @@ struct mne *mp;
 		if (t1 != S_EXT) {
 			aerr();
 		}
+		outab(op);
 		if (is_abs(&e1)) {
 			/*
 			 * mbra:
@@ -204,26 +211,26 @@ struct mne *mp;
 			 *	IY
 			 *	JRM	3
 			 */
-			;
+			v1 = (int) e1.e_addr;
 		} else
-		if (mchpcr(&e1)) {
+		if (mchpcr(&e1, &v1, 0)) {
 			/*
 			 * mbra:
 			 *		...
 			 *	JRM	mbram
 			 */
-			e1.e_addr = (dot.s_addr + 1) - e1.e_addr;
+			v1 = -v1;
 		} else {
 			/*
 			 *	LOOP	external
 			 */
 			abscheck(&e1);
+			v1 = (int) e1.e_addr;
 		}
-		outab(op);
-		if (e1.e_addr & ~0xFF) {
+		if (v1 & ~0xFF) {
 			xerr('a', "Value > 255.");
 		}
-		outab(e1.e_addr & 0xFF);
+		outab(v1 & 0xFF);
 		break;
 
 	case S_PTC:
@@ -270,6 +277,11 @@ struct mne *mp;
 	if (opcycles == OPCY_NONE) {
 		opcycles = s61860[cb[0] & 0xFF];
 	}
+ 	/*
+	 * Translate To External Format
+	 */
+	if (opcycles == OPCY_NONE) { opcycles  =  CYCL_NONE; } else
+	if (opcycles  & OPCY_NONE) { opcycles |= (CYCL_NONE | 0x3F00); }
 }
 
 /*
@@ -329,10 +341,28 @@ int c;
  * Branch/Jump PCR Mode Check
  */
 int
-mchpcr(esp)
+mchpcr(esp, v, n)
 struct expr *esp;
+int *v;
+int n;
 {
 	if (esp->e_base.e_ap == dot.s_area) {
+		if (v != NULL) {
+#if 1
+			/* Allows branching from top-to-bottom and bottom-to-top */
+ 			*v = (int) (esp->e_addr - dot.s_addr - n);
+			/* only bits 'a_mask' are significant, make circular */
+			if (*v & s_mask) {
+				*v |= (int) ~a_mask;
+			}
+			else {
+				*v &= (int) a_mask;
+			}
+#else
+			/* Disallows branching from top-to-bottom and bottom-to-top */
+			*v = (int) ((esp->e_addr & a_mask) - (dot.s_addr & a_mask) - n);
+#endif
+		}
 		return(1);
 	}
 	if (esp->e_flag==0 && esp->e_base.e_ap==NULL) {

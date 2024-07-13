@@ -41,10 +41,54 @@
  *	structures, and variables used in the assembler.
  */
 
+/*
+ *	The number of cycle count digits to display.
+ *	The valid range is bounded be >= 2 and <= 4.
+ *	An assembler requiring other than the default
+ *	of 2 digits should set this value in minit().
+ */
+int	cycldgts;
+
+/*
+ *	A pointer to the external function
+ *	which provides auxiliary functionallity
+ *	to the term() function in asexpr.c
+ *	returns:	!0 if item processed
+ *			 0 if nothing processed
+ */
+int	(*mchterm_ptr)(struct expr *esp);
+
+/*
+ *	A pointer to the external function which
+ *	provides auxiliary functionallity to the
+ *	.enabl/.dsabl processing in asmain.c
+ *	returns:	!0 if item processed
+ *			 0 if nothing processed
+ */
+int	(*mchoptn_ptr)(char *id, int v);
+
+
 int	aserr;		/*	ASxxxx error counter
+			 */
+int	trcflags;	/*	ASxxxx tracing flags
 			 */
 jmp_buf	jump_env;	/*	compiler dependent structure
 			 *	used by setjmp() and longjmp()
+			 */
+/*
+ *	Parameters which specify the optional multi-pass
+ *	processing for assemblers that have variable
+ *	length instructions.
+ */
+int	nflglmt;	/* command option pass 1 repeat limit
+			 */
+int	passlmt;	/* default maximum pass 1 repeat limit
+			 */ 
+int	passcnt;	/* number of passes executed
+			 */
+int	passJLH;	/* JLH output pass
+			 */
+int	passfuz;	/* residual fuss after pass == 1
 			 */
 
 /*
@@ -114,6 +158,9 @@ struct	asmf	*asmq;	/*	Queued pointer to a macro
  *	narg	is the number of macro definition arguments
  *	bgnarg	is a pointer to the first definition argument string
  *	endarg	is a pointer to the last  definition argument string
+ *	darg	is number of macro defintion default values
+ *	bgndrg	is a pointer to the first macro defintion default value
+ *	enddrg	is a pointer to	the last macro definition default value
  *	xarg	is the number of expansion arguments at macro invocation
  *	bgnxrg	is a pointer to the first expansion argument string
  *	endxrg	is a pointer to the last  expansion argument string
@@ -129,6 +176,9 @@ struct	asmf	*asmq;	/*	Queued pointer to a macro
  *		int		narg;		number of macro defintion arguments
  *		struct strlst * bgnarg;		link to first macro defintion argument
  *		struct strlst * endarg;		link to last macro definition argument
+ *		int		darg;		number of macro defintion default values
+ *		struct strlst * bgndrg;		link to first macro defintion default value
+ *		struct strlst * enddrg;		link to last macro definition default value
  *		int		xarg;		number of macro expansion arguments
  *		struct strlst * bgnxrg;		link to first macro expansion argument
  *		struct strlst * endxrg;		link to last macro xpansion argument
@@ -178,6 +228,22 @@ int	maxinc;		/*	maximum include file nesting encountered
 int	mcrfil;		/*	macro nesting counter
 			 */
 int	maxmcr;		/*	maximum macro nesting encountered
+			 */
+int	mcrcnt;		/*	regular macros created
+			 */
+int	mcrexe;		/*	regular macros executed
+			 */
+int	inlcnt;		/*	inline macros created
+			 */
+int	inlexe;		/*	inline macros executed
+			 */
+int	mlevel;		/*	macro Stack Level
+			 */
+struct mstack mstk[MAXMCR]; /*	macro Stack
+			 */
+int	alevel;		/*	area stack pointer
+			 */
+struct	area *astack[16]; /*	area stack
 			 */
 int	flevel;		/*	IF-ELSE-ENDIF flag (false != 0)
 			 */
@@ -233,8 +299,6 @@ int	cflag;		/*	-c, disable cycle counts in listing flag
 int	fflag;		/*	-f(f), relocations flagged flag
 			 */
 int	gflag;		/*	-g, make undefined symbols global flag
-			 */
-int	hflag;		/*	-h, diagnostic help printout flag
 			 */
 int	iflag;		/*	-i, insert command line string flag
 			 */
@@ -321,6 +385,12 @@ int	*cpt;		/*	pointer to assembler relocation type
 			 */
 int	cbt[NCODE];	/*	array of assembler relocation types
 			 *	describing the data in cb[]
+			 */
+int	awg;		/*	default size value (special coding)
+			 *	0 - default not defined, 1-4 - 1-4 bytes
+			 */
+int	csn;		/*	'C' Style Numbers - 0nnn (Octal), 0xnnn (Hex), Else Decimal
+			 *	0 - default disabled, 1 - enabled
 			 */
 int	opcycles;	/*	opcode execution cycles
 			 */

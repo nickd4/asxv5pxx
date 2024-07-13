@@ -24,8 +24,9 @@ DISASM		= OBJ2ASM
 LNK		= LINK
 DLLS		= 
 
-HEADERS		= ..\..\..\asxxsrc\asxxxx.h C:\SC\INCLUDE\stdlib.h C:\SC\INCLUDE\stdio.h  \
-		C:\SC\INCLUDE\setjmp.h C:\SC\INCLUDE\string.h C:\SC\INCLUDE\time.h ..\..\..\AS78K0S\r78k0s.h 
+HEADERS		= ..\..\..\AS78K0S\r78k0s.h ..\..\..\AS78K0S\r78ks.h ..\..\..\asxxsrc\asxxxx.h  \
+		C:\SC\INCLUDE\stdlib.h C:\SC\INCLUDE\stdio.h C:\SC\INCLUDE\setjmp.h C:\SC\INCLUDE\string.h  \
+		C:\SC\INCLUDE\time.h 
 
 DEFFILE		= as78k0s.DEF
 
@@ -37,9 +38,9 @@ CREATETARGETDIR	=
 
 LIBS		= 
 
-CFLAGS		=  -ms -C -S -3 -a2 -c -g -gd 
+CFLAGS		=  -Ae -ms -C -S -3 -a2 -c -g -gd 
 LFLAGS		=  /CO /DE /XN
-DEFINES		= 
+DEFINES		= -D_DEBUG=1 
 !ELSE
 OUTPUTDIR	= ..\build
 !IF EXIST (..\build)
@@ -56,7 +57,7 @@ CREATETARGETDIR	= if not exist $(TARGETDIR)\*.* md $(TARGETDIR)
 
 LIBS		= 
 
-CFLAGS		=  -A -r -J -ml -o+time -3 -a2 -c 
+CFLAGS		=  -A -r -J -ml -o+time -3 -a2 -c -wx 
 LFLAGS		=  /DE /PACKF /XN
 DEFINES		= 
 !ENDIF
@@ -81,8 +82,8 @@ INCLUDEDOBJS	=
 
 OBJS		=  $(OUTPUTDIR)\asdata.OBJ  $(OUTPUTDIR)\asdbg.OBJ  $(OUTPUTDIR)\asexpr.OBJ  \
 		 $(OUTPUTDIR)\aslex.OBJ  $(OUTPUTDIR)\aslist.OBJ  $(OUTPUTDIR)\asmain.OBJ  $(OUTPUTDIR)\asmcro.OBJ  \
-		 $(OUTPUTDIR)\asout.OBJ  $(OUTPUTDIR)\assubr.OBJ  $(OUTPUTDIR)\assym.OBJ  $(OUTPUTDIR)\r78kadr.OBJ  \
-		 $(OUTPUTDIR)\r78kmch.OBJ  $(OUTPUTDIR)\r78kpst.OBJ 
+		 $(OUTPUTDIR)\asout.OBJ  $(OUTPUTDIR)\assubr.OBJ  $(OUTPUTDIR)\assym.OBJ  $(OUTPUTDIR)\r78ksadr.OBJ  \
+		 $(OUTPUTDIR)\r78ksmch.OBJ  $(OUTPUTDIR)\r78kspst.OBJ 
 
 RCFILES		= 
 
@@ -258,18 +259,18 @@ $(OUTPUTDIR)\assym.OBJ:	..\..\..\ASXXSRC\assym.c
 
 
 
-$(OUTPUTDIR)\r78kadr.OBJ:	..\..\..\AS78K0S\r78kadr.c
-		$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -o$(OUTPUTDIR)\r78kadr.obj ..\..\..\AS78K0S\r78kadr.c
+$(OUTPUTDIR)\r78ksadr.OBJ:	..\..\..\AS78K0S\r78ksadr.c
+		$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -o$(OUTPUTDIR)\r78ksadr.obj ..\..\..\AS78K0S\r78ksadr.c
 
 
 
-$(OUTPUTDIR)\r78kmch.OBJ:	..\..\..\AS78K0S\r78kmch.c
-		$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -o$(OUTPUTDIR)\r78kmch.obj ..\..\..\AS78K0S\r78kmch.c
+$(OUTPUTDIR)\r78ksmch.OBJ:	..\..\..\AS78K0S\r78ksmch.c
+		$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -o$(OUTPUTDIR)\r78ksmch.obj ..\..\..\AS78K0S\r78ksmch.c
 
 
 
-$(OUTPUTDIR)\r78kpst.OBJ:	..\..\..\AS78K0S\r78kpst.c
-		$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -o$(OUTPUTDIR)\r78kpst.obj ..\..\..\AS78K0S\r78kpst.c
+$(OUTPUTDIR)\r78kspst.OBJ:	..\..\..\AS78K0S\r78kspst.c
+		$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -o$(OUTPUTDIR)\r78kspst.obj ..\..\..\AS78K0S\r78kspst.c
 
 
 

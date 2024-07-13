@@ -121,6 +121,14 @@
 ;
 ; *****-----*****-----*****-----*****-----*****-----*****-----*****
 ;
+; Include SFR Definitions
+;
+	.list	(!)	; This Inhibits The Include File Pagination
+	.include "lp3240.sfr"
+	.list
+;
+;****************************************************************************
+;
 	.nlist
 .endif	; .else of _macros
 
@@ -133,13 +141,13 @@
 ; *****-----*****-----*****-----*****-----*****-----*****-----*****
 ;
 	.macro	.push	arg
-	  .list	(!,err,loc,bin,cyc,eqt,src,me)
+	  .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  push	arg
 	  .nlist
 	.endm
 
 	.macro	.pop	arg
-	  .list	(!,err,loc,bin,cyc,eqt,src,me)
+	  .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  pop	arg
 	  .nlist
 	.endm
@@ -159,7 +167,7 @@
 	    .iifdif reg$,R1	ld$err = ld$err - 1
 	    .iifdif reg$,R0	ld$err = ld$err - 1
 	    .ifeq ld$err
-	      .list	(!,err,loc,bin,cyc,eqt,src,me)
+	      .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  .error 1	; reg Required To Be R0 Or R1
 	      .nlist
 	    .endif
@@ -237,20 +245,20 @@
 	    .m$val	dst$
 	    .ifne	ACC-m$val
 	      .iifnb ppa$,	.push	a
-	      .list	(!,err,loc,bin,cyc,eqt,src,me)
+	      .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  mov	reg$,#src$
 	  mov	dst$,@reg$
 	      .nlist
 	      .iifnb ppa$,	.pop	a
 	    .else
-	      .list	(!,err,loc,bin,cyc,eqt,src,me)
+	      .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  mov	reg$,#src$
 	  mov	a,@reg$
 	      .nlist
 	    .endif
 	  .else
 	    ; if "dst$" value == "a" then use short form
-	    .list	(!,err,loc,bin,cyc,eqt,src,me)
+	    .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  mov	reg$,#src$
 	  mov	a,@reg$
 	    .nlist
@@ -318,24 +326,24 @@
 	    .ifne	ACC-m$val
 	      .iifnb ppa$,	.push	a
 	    .endif
-	    .list	(!,err,loc,bin,cyc,eqt,src,me)
+	    .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  mov	reg1$,#src$
 	  mov	a,@reg1$
 	  mov	reg0$,a
 	    .nlist
 	    .ifne	ACC-m$val
-	      .list	(!,err,loc,bin,cyc,eqt,src,me)
+	      .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  mov	dst$,@reg0$
 	      .nlist
 	      .iifnb ppa$,	.pop	a
 	    .else
-	      .list	(!,err,loc,bin,cyc,eqt,src,me)
+	      .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  mov	a,@reg0$
 	      .nlist
 	    .endif
 	  .else
 	    ; if "dst$" == "a" then use short form
-	    .list	(!,err,loc,bin,cyc,eqt,src,me)
+	    .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  mov	reg1$,#src$
 	  mov	a,@reg1$
 	  mov	reg0$,a
@@ -390,19 +398,19 @@
 	    .ifne	ACC-m$val
 	      .iifnb ppa$,	.push	a
 	    .endif
-	    .list	(!,err,loc,bin,cyc,eqt,src,me)
+	    .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  mov	reg$,#src$
 	  movx	a,@reg$
 	    .nlist
 	    .ifne	ACC-m$val
-	      .list	(!,err,loc,bin,cyc,eqt,src,me)
+	      .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  mov	dst$,a
 	      .nlist
 	      .iifnb ppa$,	.pop	a
 	    .endif
 	  .else
 	    ; if "dst$" == "a" then use short form
-	    .list	(!,err,loc,bin,cyc,eqt,src,me)
+	    .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  mov	reg$,#src$
 	  movx	a,@reg$
 	    .nlist
@@ -470,25 +478,25 @@
 	    .ifne	ACC-m$val
 	      .iifnb ppa$,	.push	a
 	    .endif
-	    .list	(!,err,loc,bin,cyc,eqt,src,me)
+	    .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  mov	reg1$,#src$
 	  movx	a,@reg1$
 	  mov	reg0$,a
 	    .nlist
 	    .ifne	ACC-m$val
-	      .list	(!,err,loc,bin,cyc,eqt,src,me)
+	      .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  movx	a,@reg0$
 	  mov	dst$,a
 	      .nlist
 	      .iifnb ppa$,	.pop	a
 	    .else
-	      .list	(!,err,loc,bin,cyc,eqt,src,me)
+	      .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  movx	a,@reg0$
 	      .nlist
 	    .endif
 	  .else
 	    ; if "dst$" == "a" then use short form
-	    .list	(!,err,loc,bin,cyc,eqt,src,me)
+	    .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  mov	reg1$,#src$
 	  movx	a,@reg1$
 	  mov	reg0$,a
@@ -539,7 +547,7 @@
           .ifdif	a,dst$
 	    ; "dst$" != "a" use long form
 	    .iifnb ppa$,	.push	a
-	    .list	(!,err,loc,bin,cyc,eqt,src,me)
+	    .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  mov	dptr,#src$
 	  movx	a,@dptr
 	  mov	dst$,a
@@ -547,7 +555,7 @@
 	    .iifnb ppa$,	.pop	a
 	  .else
 	    ; "dst$" == "a" use short form
-	    .list	(!,err,loc,bin,cyc,eqt,src,me)
+	    .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  mov	dptr,#src$
 	  movx	a,@dptr
 	    .nlist
@@ -560,7 +568,7 @@
 	  .iifidn dp,dph	.push	dpl
 	  .iifidn dp,dpl	.push	dph
 	  .iifnb ppa$,		.push	a
-	  .list	(!,err,loc,bin,cyc,eqt,src,me)
+	  .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  mov	dptr,#src$
 	  movx	a,@dptr
 	  mov	dp,a
@@ -606,7 +614,7 @@
 	    .ifne	ACC-m$val
 	      .iifnb ppa$,	.push	a
 	    .endif
-	    .list	(!,err,loc,bin,cyc,eqt,src,me)
+	    .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  lcall	m$lbi_x
 	    .nlist
 	    .ifne	ACC-m$val
@@ -615,7 +623,7 @@
 	    .endif
 	  .else
 	    ; if "dst$" == "a" then use short form
-	    .list	(!,err,loc,bin,cyc,eqt,src,me)
+	    .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  lcall	m$lbi_x
 	    .nlist
 	  .endif
@@ -676,7 +684,7 @@ m$lbi_x:
           .ifdif	a,dst$
 	    ; "dst$" != "a" use long form
 	    .iifnb ppa$,	.push	a
-	    .list	(!,err,loc,bin,cyc,eqt,src,me)
+	    .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  mov	dptr,#src$
 	  clr	a
 	  movc	a,@a+dptr
@@ -685,7 +693,7 @@ m$lbi_x:
 	    .iifnb ppa$,	.pop	a
 	  .else
 	    ; "dst$" == "a" use short form
-	    .list	(!,err,loc,bin,cyc,eqt,src,me)
+	    .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  mov	dptr,#src$
 	  clr	a
 	  movc	a,@a+dptr
@@ -699,7 +707,7 @@ m$lbi_x:
 	  .iifidn dp,dph	.push	dpl
 	  .iifidn dp,dpl	.push	dph
 	  .iifnb ppa$,		.push	a
-	  .list	(!,err,loc,bin,cyc,eqt,src,me)
+	  .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  mov	dptr,#src$
 	  clr	a
 	  movc	a,@a+dptr
@@ -749,20 +757,20 @@ m$lbi_x:
 	    .m$val	dst$
 	    .ifne	ACC-m$val
 	      .iifnb ppa$,	.push	a
-	      .list	(!,err,loc,bin,cyc,eqt,src,me)
+	      .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  mov	reg$,#dst$
 	  mov	@reg$,src$
 	      .nlist
 	      .iifnb ppa$,	.pop	a
 	    .else
-	      .list	(!,err,loc,bin,cyc,eqt,src,me)
+	      .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  mov	reg$,#dst$
 	  mov	@reg$,a
 	      .nlist
 	    .endif
 	  .else
 	    ; if "src$" == "a" then use short form
-	    .list	(!,err,loc,bin,cyc,eqt,src,me)
+	    .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  mov	reg$,#dst$
 	  mov	@reg$,a
 	    .nlist
@@ -832,17 +840,17 @@ m$lbi_x:
 	    .ifne	ACC-m$val
 	      .iifnb ppa$,	.push	a
 	    .else
-	      .list	(!,err,loc,bin,cyc,eqt,src,me)
+	      .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  push	a
 	      .nlist
 	    .endif
-	    .list	(!,err,loc,bin,cyc,eqt,src,me)
+	    .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  mov	reg1$,#dst$
 	  mov	a,@reg1$
 	  mov	reg0$,a
 	    .nlist
 	    .ifne	ACC-m$val
-	      .list	(!,err,loc,bin,cyc,eqt,src,me)
+	      .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  mov	a,src$
 	  mov	@reg0$,a
 	      .nlist
@@ -850,14 +858,14 @@ m$lbi_x:
 	        .iifnb ppa$,	.pop	a
 	      .endif
 	    .else
-	      .list	(!,err,loc,bin,cyc,eqt,src,me)
+	      .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  pop	a
 	  mov	@reg0$,a
 	      .nlist
 	    .endif
 	  .else
 	    ; if "src$" == "a" then use short form
-	    .list	(!,err,loc,bin,cyc,eqt,src,me)
+	    .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  push	a
 	  mov	reg1$,#ACC
 	  mov	a,@reg1$
@@ -914,21 +922,21 @@ m$lbi_x:
 	    .m$val	dst$
 	    .ifne	ACC-m$val
 	      .iifnb ppa$,	.push	a
-	      .list	(!,err,loc,bin,cyc,eqt,src,me)
+	      .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  mov	reg$,#dst$
 	  mov	a,src$
 	  movx	@reg$,a
 	      .nlist
 	      .iifnb ppa$,	.pop	a
 	    .else
-	      .list	(!,err,loc,bin,cyc,eqt,src,me)
+	      .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  mov	reg$,#dst$
 	  movx	@reg$,a
 	      .nlist
 	    .endif
 	  .else
 	    ; if "src$" == "a" then use short form
-	    .list	(!,err,loc,bin,cyc,eqt,src,me)
+	    .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  mov	reg$,#dst$
 	  movx	@reg$,a
 	    .nlist
@@ -999,17 +1007,17 @@ m$lbi_x:
 	    .ifne	ACC-m$val
 	      .iifnb ppa$,	.push	a
 	    .else
-	      .list	(!,err,loc,bin,cyc,eqt,src,me)
+	      .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  push	a
 	      .nlist
 	    .endif
-	    .list	(!,err,loc,bin,cyc,eqt,src,me)
+	    .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  mov	reg1$,#dst$
 	  movx	a,@reg1$
 	  mov	reg0$,a
 	    .nlist
 	    .ifne	ACC-m$val
-	      .list	(!,err,loc,bin,cyc,eqt,src,me)
+	      .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  mov	a,src$
 	  movx	@reg0$,a
 	      .nlist
@@ -1017,14 +1025,14 @@ m$lbi_x:
 	        .iifnb ppa$,	.pop	a
 	      .endif
 	    .else
-	      .list	(!,err,loc,bin,cyc,eqt,src,me)
+	      .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  pop	a
 	  movx	@reg0$,a
 	      .nlist
 	    .endif
 	  .else
 	    ; if "src$" == "a" then use short form
-	    .list	(!,err,loc,bin,cyc,eqt,src,me)
+	    .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  push	a
 	  mov	reg1$,#ACC
 	  movx	a,@reg1$
@@ -1070,21 +1078,21 @@ m$lbi_x:
 	    .m$val	dst$
 	    .ifne	ACC-m$val
 	      .iifnb ppa$,	.push	a
-	      .list	(!,err,loc,bin,cyc,eqt,src,me)
+	      .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  mov	dptr,#dst$
 	  mov	a,src$
 	  movx	@dptr,a
 	      .nlist
 	      .iifnb ppa$,	.pop	a
 	    .else
-	      .list	(!,err,loc,bin,cyc,eqt,src,me)
+	      .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  mov	dptr,#dst$
 	  mov	@dptr,a
 	      .nlist
 	    .endif
 	  .else
 	    ; if "src$" == "a" then use short form
-	    .list	(!,err,loc,bin,cyc,eqt,src,me)
+	    .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  mov	dptr,#dst$
 	  movx	@dptr,a
 	    .nlist
@@ -1130,7 +1138,7 @@ m$lbi_x:
 	      .iifnb ppa$,	.push	a
 	      mov	a,src$
 	    .endif
-	    .list	(!,err,loc,bin,cyc,eqt,src,me)
+	    .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  lcall	m$sbi_x
 	    .nlist
 	    .ifne	ACC-m$val
@@ -1138,7 +1146,7 @@ m$lbi_x:
 	    .endif
 	  .else
 	    ; if "src$" == "a" then use short form
-	    .list	(!,err,loc,bin,cyc,eqt,src,me)
+	    .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  lcall	m$sbi_x
 	    .nlist
 	  .endif
@@ -1184,7 +1192,7 @@ m$sbi_x:
 	  .ifb	reg$
 	    .iifnb ppa$,	.push	a
 	    .iifnb ppr$,	.push	r1
-	    .list	(!,err,loc,bin,cyc,eqt,src,me)
+	    .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  mov	r1,#dst$
 	  mov	@r1,#0
 	    .nlist
@@ -1194,7 +1202,7 @@ m$sbi_x:
 	    .chkr01 reg$
 	    .iifnb ppa$,	.push	a
 	    .iifnb ppr$,	.push	reg$
-	    .list	(!,err,loc,bin,cyc,eqt,src,me)
+	    .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  mov	reg$,#dst$
 	  mov	@reg$,#0
 	    .nlist
@@ -1222,7 +1230,7 @@ m$sbi_x:
 	  .ifb	reg$
 	    .iifnb ppa$,	.push	a
 	    .iifnb ppr$,	.push	r1
-	    .list	(!,err,loc,bin,cyc,eqt,src,me)
+	    .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  clr	a
 	  mov	r1,#dst$
 	  movx	@r1,a
@@ -1233,7 +1241,7 @@ m$sbi_x:
 	    .chkr01 reg$
 	    .iifnb ppa$,	.push	a
 	    .iifnb ppr$,	.push	reg$
-	    .list	(!,err,loc,bin,cyc,eqt,src,me)
+	    .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  clr	a
 	  mov	reg$,#dst$
 	  movx	@reg$,a
@@ -1262,7 +1270,7 @@ m$sbi_x:
 	  .iifnb ppa$,	.push	a
 	  .iifnb ppx$,	.push	dph
 	  .iifnb ppx$,	.push	dpl
-	  .list	(!,err,loc,bin,cyc,eqt,src,me)
+	  .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  clr	a
 	  mov	dptr,#dst$
 	  movx	@dptr,a
@@ -1291,7 +1299,7 @@ m$sbi_x:
 	  .iifnb ppa$,		.push	a
 	  .ifb	reg$
 	    .iifnb ppr$,	.push	r1
-	    .list	(!,err,loc,bin,cyc,eqt,src,me)
+	    .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  mov	r1,#dst$
 	  inc	@r1
 	    .nlist
@@ -1299,7 +1307,7 @@ m$sbi_x:
 	  .else
 	    .chkr01 reg$
 	    .iifnb ppr$,	.push	reg$
-	    .list	(!,err,loc,bin,cyc,eqt,src,me)
+	    .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  mov	reg$,#dst$
 	  inc	@reg$
 	    .nlist
@@ -1327,7 +1335,7 @@ m$sbi_x:
 	  .iifnb ppa$,		.push	a
 	  .ifb	reg$
 	    .iifnb ppr$,	.push	r1
-	    .list	(!,err,loc,bin,cyc,eqt,src,me)
+	    .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  mov	r1,#dst$
 	  movx	a,@r1
 	  inc	a
@@ -1337,7 +1345,7 @@ m$sbi_x:
 	  .else
 	    .chkr01 reg$
 	    .iifnb ppr$,	.push	reg$
-	    .list	(!,err,loc,bin,cyc,eqt,src,me)
+	    .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  mov	reg$,#dst$
 	  movx	a,@reg$
 	  inc	a
@@ -1367,7 +1375,7 @@ m$sbi_x:
 	  .iifnb ppa$,		.push	a
 	  .iifnb ppx$,		.push	dph
 	  .iifnb ppx$,		.push	dpl
-	  .list	(!,err,loc,bin,cyc,eqt,src,me)
+	  .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  mov	dptr,#dst$
 	  movx	a,@dptr
 	  inc	a
@@ -1397,7 +1405,7 @@ m$sbi_x:
 	  .iifnb ppa$,		.push	a
 	  .ifb	reg$
 	    .iifnb ppr$,	.push	r1
-	    .list	(!,err,loc,bin,cyc,eqt,src,me)
+	    .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  mov	r1,#dst$
 	  dec	@r1
 	    .nlist
@@ -1405,7 +1413,7 @@ m$sbi_x:
 	  .else
 	    .chkr01 reg$
 	    .iifnb ppr$,	.push	reg$
-	    .list	(!,err,loc,bin,cyc,eqt,src,me)
+	    .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  mov	reg$,#dst$
 	  dec	@reg$
 	    .nlist
@@ -1433,7 +1441,7 @@ m$sbi_x:
 	  .iifnb ppa$,		.push	a
 	  .ifb	reg$
 	    .iifnb ppr$,	.push	r1
-	    .list	(!,err,loc,bin,cyc,eqt,src,me)
+	    .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  mov	r1,#dst$
 	  movx	a,@r1
 	  dec	a
@@ -1443,7 +1451,7 @@ m$sbi_x:
 	  .else
 	    .chkr01 reg$
 	    .iifnb ppr$,	.push	reg$
-	    .list	(!,err,loc,bin,cyc,eqt,src,me)
+	    .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  mov	reg$,#dst$
 	  movx	a,@reg$
 	  dec	a
@@ -1472,7 +1480,7 @@ m$sbi_x:
 	  .iifnb ppa$,		.push	a
 	  .iifnb ppx$,		.push	dph
 	  .iifnb ppx$,		.push	dpl
-	  .list	(!,err,loc,bin,cyc,eqt,src,me)
+	  .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  mov	dptr,#dst$
 	  movx	a,@dptr
 	  dec	a
@@ -1521,7 +1529,7 @@ m$sbi_x:
 	    .mexit
 	  .endm
 	; Case #3 : Neither Source (src$) Or Destination (dst$) Are #s
-	  .list	(!,err,loc,bin,cyc,eqt,src,me)
+	  .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  mov	r1,#dst$
 	  mov	r0,#src$
 	  lcall	m$cmpb_rx
@@ -1590,7 +1598,7 @@ m$cmpb_rx:
 	    .mexit
 	  .endm
 	; Case #3 : Neither Source (src$) Or Destination (dst$) Are #s
-	  .list	(!,err,loc,bin,cyc,eqt,src,me)
+	  .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  mov	r1,#dst$
 	  mov	r0,#src$
 	  lcall	m$cmpw_rx
@@ -1681,7 +1689,7 @@ m$cmpw_rx:
 	  .iifnb ppa$,		.push	a
 	  .iifnb ppr$,		.push	r1
 	  .iifnb ppr$,		.push	r0
-	  .list	(!,err,loc,bin,cyc,eqt,src,me)
+	  .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  mov	r0,#dst$
 	  mov	r1,#src$
 	  lcall	m$mvw_rx
@@ -1884,7 +1892,7 @@ m$mvw_rx:
 	  .iifnb ppa$,		.push	a
 	  .ifb	reg$
 	    .iifnb ppr$,	.push	r1
-	    .list	(!,err,loc,bin,cyc,eqt,src,me)
+	    .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  mov	r1,#adr$
 	  movx	a,@r1
 	  dec	a
@@ -1894,7 +1902,7 @@ m$mvw_rx:
 	    .iifnb ppr$,	.pop	r1
 	  .else
 	    .iifnb ppr$,	.push	reg$
-	    .list	(!,err,loc,bin,cyc,eqt,src,me)
+	    .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  mov	reg$,#adr$
 	  movx	a,@reg$
 	  dec	a
@@ -1904,7 +1912,7 @@ m$mvw_rx:
 	    .iifnb ppr$,	.pop	reg$
 	  .endif
 	  .iifnb ppa$,	.pop	a
-	  .list	(!,err,loc,bin,cyc,eqt,src,me)
+	  .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  jc	jmp$
 	  .nlist
 	.endm
@@ -1929,7 +1937,7 @@ m$mvw_rx:
 	  .ifb	reg$
 	  .iifnb ppx$,	.push	dph
 	  .iifnb ppx$,	.push	dpl
-	  .list	(!,err,loc,bin,cyc,eqt,src,me)
+	  .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  mov	dptr,#adr$
 	  movx	a,@dptr
 	  dec	a
@@ -1939,7 +1947,7 @@ m$mvw_rx:
 	  .iifnb ppx$,	.pop	dpl
 	  .iifnb ppx$,	.pop	dph
 	  .iifnb ppa$,	.pop	a
-	  .list	(!,err,loc,bin,cyc,eqt,src,me)
+	  .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  jc	jmp$
 	  .nlist
 	.endm
@@ -1967,11 +1975,11 @@ m$mvw_rx:
 	    .mexit
 	  .endm
 	  .ifne	.ld$imm
-	    .list	(!,err,loc,bin,eqt,cyc,src,me)
+	    .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  mov	dptr,src$
 	    .nlist
 	  .else
-	    .list	(!,err,loc,bin,eqt,cyc,src,me)
+	    .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  mov	dph,src$
 	  mov	dpl,src$+1
 	    .nlist
@@ -1996,7 +2004,7 @@ m$mvw_rx:
 	  .nlist
 	  .globl m$ldptr_r
 	  .iifnb ppr$,	.push	r1
-	  .list	(!,err,loc,bin,eqt,cyc,src,me)
+	  .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  mov	r1,#src$
 	  lcall	m$ldptr_r
 	  .nlist
@@ -2037,7 +2045,7 @@ m$ldptr_r:
 	  .nlist
 	  .globl m$ldptr_rx
 	  .iifnb ppr$,	.push	r1
-	  .list	(!,err,loc,bin,eqt,cyc,src,me)
+	  .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  mov	r1,#src$
 	  lcall	m$ldptr_rx
 	  .nlist
@@ -2077,7 +2085,7 @@ m$ldptr_rx:
 	.macro	.ldptr_x	src$
 	  .nlist
 	  .globl m$ldptr_x
-	  .list	(!,err,loc,bin,eqt,cyc,src,me)
+	  .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  mov	dptr,#src$
 	  lcall	m$ldptr_x
 	  .nlist
@@ -2116,7 +2124,7 @@ m$ldptr_x:
 ; *****-----*****-----*****-----*****-----*****-----*****-----*****
 ;
 	.macro	.sdptr	dst$
-	  .list	(!,err,loc,bin,eqt,cyc,src,me)
+	  .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  mov	dst$,dph
 	  mov	dst$+1,dpl
 	  .nlist
@@ -2142,7 +2150,7 @@ m$ldptr_x:
 	  .iifnb ppa$,	.push	a
 	  .ifb	reg$
 	    .iifnb ppr$,	.push	r1
-	    .list	(!,err,loc,bin,eqt,cyc,src,me)
+	    .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  mov	r1,#dst$
 	  mov	@r1,dph
 	  inc	r1
@@ -2152,7 +2160,7 @@ m$ldptr_x:
 	  .else
 	    .chkr01 reg$
 	    .iifnb ppr$,	.push	reg$
-	    .list	(!,err,loc,bin,eqt,cyc,src,me)
+	    .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  mov	reg$,#dst$
 	  mov	@reg$,dph
 	  inc	reg$
@@ -2184,7 +2192,7 @@ m$ldptr_x:
 	  .iifnb ppa$,	.push	a
 	  .ifb	reg$
 	    .iifnb ppr$,	.push	r1
-	    .list	(!,err,loc,bin,eqt,cyc,src,me)
+	    .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  mov	r1,#dst$
 	  mov	a,dph
 	  movx	@r1,a
@@ -2196,7 +2204,7 @@ m$ldptr_x:
 	  .else
 	    .chkr01 reg$
 	    .iifnb ppr$,	.push	reg$
-	    .list	(!,err,loc,bin,eqt,cyc,src,me)
+	    .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  mov	reg$,#dst$
 	  mov	a,dph
 	  movx	@reg$,a
@@ -2225,7 +2233,7 @@ m$ldptr_x:
 	.macro	.sdptr_x	dst$
 	  .nlist
 	  .globl m$sdptr_x
-	  .list	(!,err,loc,bin,eqt,cyc,src,me)
+	  .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  sjmp	.+0d16
 	  push	a		; save registers
 	  push	b
@@ -2273,7 +2281,7 @@ m$sdptr_x:
 ; *****-----*****-----*****-----*****-----*****-----*****-----*****
 ;
 	.macro	.ad_dptr	val
-	  .list	(!,err,loc,bin,eqt,cyc,src,me)
+	  .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  push	a
 	  mov	a,dpl
 	  add	a,<val
@@ -2300,7 +2308,7 @@ m$sdptr_x:
 	.macro	.pshreg		ppx$
 	  .nlist
 	  .globl psh$reg
-	  .list	(!,err,loc,bin,eqt,cyc,src,me)
+	  .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  push	dpl
 	  push	dph
 	  lcall	psh$reg
@@ -2346,7 +2354,7 @@ psh$reg:
 	.macro	.popreg
 	  .nlist
 	  .globl pop$reg
-	  .list	(!,err,loc,bin,eqt,cyc,src,me)
+	  .list	(!,err,loc,bin,cyc,eqt,lin,src,me)
 	  lcall	pop$reg
 	  pop	dph
 	  pop	dpl

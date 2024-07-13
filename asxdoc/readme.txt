@@ -1,37 +1,37 @@
 
-       ASxxxx Cross Assemblers, Version 5.40, March 2021 
+       ASxxxx Cross Assemblers, Version 5.50, September 2023 
 
        The  ASxxxx  assemblers are a series of microprocessor assemblers
     written in the C programming  language.   This  collection  contains
-    cross  assemblers  for  the 1802, S2650, SC/MP, MPS430, 6100, 61860,
-    6500, 6800(6802/6808),  6801(6803/HD6303),  6804,  6805,  68HC(S)08,
-    6809,  68HC11,  68HC(S)12,  68HC16, 740, 78K/0, 78K/0S, 8008, 8008S,
-    8048(8041/8022/8021),  8051,   8085(8080),   AT89LP,   8X300(8X305),
-    DS8XCXXX,  AVR,  EZ80,  F2MC8L/FX,  F8/3870,  GameBoy(Z80),  H8/3xx,
-    Cypress  PSoC(M8C),  PIC,  Rabbit  2000/3000,  ST6,  ST7,  ST8,  Z8,
-    Z80(HD64180),  and  Z280 series microprocessors.  The companion pro-
-    gram ASLINK is a relocating linker supporting all the  cross  assem-
-    blers.   ASLINK also supports object files created with the 4.xx and
-    3.xx assemblers.  
+    cross  assemblers  for  the  1802, S2650, 4040(4004), SC/MP, MPS430,
+    6100, 61860, 6500, 6800(6802/6808), 6801(6803/HD6303),  6804,  6805,
+    68HC(S)08,  6809,  68HC11, 68HC(S)12, 68HC16, 68CF, 68K, 740, 78K/0,
+    78K/0S, 8008, 8008S, 8048(8041/8022/8021), 8051, 8085(8080), AT89LP,
+    8X300(8X305),  COP4,  COP8,  DS8XCXXX,  AVR,  EZ8,  EZ80, F2MC8L/FX,
+    F8/3870, GameBoy(Z80), H8/3xx, Cypress PSoC(M8C), PDP11, PIC, Rabbit
+    2000/3000,  RS08,  ST6,  ST7,  ST8,  SX,  Z8, Z80(HD64180), and Z280
+    series microprocessors.  The companion program ASLINK is a  relocat-
+    ing  linker  supporting  all the cross assemblers.  ASLINK also sup-
+    ports object files created with the 4.xx and 3.xx assemblers.  
 
        The assemblers and linker have been tested using Linux and DJGPP,
     Cygwin, Symantec C/C++  V7.2,  Borland  Turbo C++ 3.0,  Open  Watcom
-    V1.9,  VC6,  Visual  Studio  2005, 2010, 2013, 2015, 2019.  Complete
-    source code and documentation for the assemblers and linker  is  in-
-    cluded  with the distribution.  Additionally, test code for each as-
-    sembler and several microprocessor monitors ( ASSIST05 for the 6805,
-    MONDEB  and  ASSIST09  for  the  6809, BUFFALO 2.5 for the 6811, and
-    MONDEB for 8051 / AT89LP series ) are included as  working  examples
-    of use of these assemblers.  
+    V1.9,  VC6,  Visual  Studio  2005,  2010, 2013, 2015, 2019 and 2022.
+    Complete source code and documentation for the assemblers and linker
+    is included with the distribution.  Additionally, test code for each
+    assembler and several microprocessor monitors  (  ASSIST05  for  the
+    6805,  MONDEB  and  ASSIST09 for the 6809, BUFFALO 2.5 for the 6811,
+    and MONDEB for 8051 / AT89LP series ) are included as working  exam-
+    ples of use of these assemblers.  
 
-    asxv5p40.zip        ASxxxx and ASlink V5.40 Zipped
+    asxv5p50.zip        ASxxxx and ASlink V5.50 Zipped
     
         MS-DOS:
-        Windows:        unzip asxv5p40.zip
-                        pkunzip -d asxv5p40.zip
+        Windows:        unzip asxv5p50.zip
+                        pkunzip -d asxv5p50.zip
                         unzips and restores directory structure
     
-        Linux:          unzip -L -a asxv5p40.zip
+        Linux:          unzip -L -a asxv5p50.zip
                         unzips to lower-case names and converts
                         ascii files to \n from \r\n form.
     
@@ -60,6 +60,8 @@
     
         VS19:           \asxv5pxx\asxmak\vs19\build\
     
+        VS22:           \asxv5pxx\asxmak\vs22\build\
+    
         Watcom:         \asxv5pxx\asxmak\watcom\build\
     
     
@@ -87,6 +89,8 @@
     
         VS19:           \asxv5pxx\asxmak\vs19\exe\
     
+        VS22:           \asxv5pxx\asxmak\vs22\exe\
+    
         Watcom:         \asxv5pxx\asxmak\watcom\exe\
     
     
@@ -104,7 +108,7 @@
     
     
     /*
-     *  Copyright (C) 1989-2021  Alan R. Baldwin
+     *  Copyright (C) 1989-2023 Alan R. Baldwin
      *
      *  This program is free software: you can redistribute it and/or
      *  modify it under the terms of the GNU General Public License

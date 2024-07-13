@@ -1,7 +1,7 @@
 /* h8mch.c */
 
 /*
- *  Copyright (C) 1994-2014  Alan R. Baldwin
+ *  Copyright (C) 1994-2023  Alan R. Baldwin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -40,8 +40,8 @@ int	bb[NB];
 #define	OPCY_SDP	(-1)
 #define	OPCY_ERR	(-2)
 
-/*	OPCY_NONE	(0x80)	*/
-/*	OPCY_MASK	(0x7F)	*/
+#define	OPCY_NONE	((char) (0x80))
+#define	OPCY_MASK	((char) (0x7F))
 
 #define	UN	(OPCY_NONE | 0x00)
 
@@ -84,9 +84,16 @@ struct mne *mp;
 	int oplb, ophb;
 	int rf, opcode, c;
 	struct expr e1, e2;
+	struct sym *sp;
 	int t1, t2, v1, v2;
 	char id[NCPS];
 	a_uint pc;
+
+	/*
+	 * Using Internal Format
+	 * For Cycle Counting
+	 */
+	opcycles = OPCY_NONE;
 
 	clrexpr(&e1);
 	clrexpr(&e2);
@@ -100,30 +107,41 @@ struct mne *mp;
 	case S_SDP:
 		opcycles = OPCY_SDP;
 		zpg = dot.s_area;
+		e1.e_addr = ~0x00FF;
 		if (more()) {
 			expr(&e1, 0);
 			if (e1.e_flag == 0 && e1.e_base.e_ap == NULL) {
-				if (e1.e_addr != ~0x00FF) {
-					xerr('b', "Only Page at 0xFF00 Allowed.");
+				if (e1.e_addr  != ~0x00FF) {
+					xerr('b', "Only Page 0xFF00 Allowed.");
 				}
+				e1.e_addr = ~0x00FF;
 			}
 			if ((c = getnb()) == ',') {
 				getid(id, -1);
 				zpg = alookup(id);
 				if (zpg == NULL) {
+					zpg = dot.s_area;
 					xerr('u', "Undefined Area.");
 				}
 			} else {
 				unget(c);
 			}
 		}
-		if (zpg == dot.s_area) {
-			e1.e_addr = ~0x00FF;
-		}
 		outdp(zpg, &e1, 0);
 		lmode = SLIST;
 		break;
 
+	case S_PGD:
+		do {
+			getid(id, -1);
+			sp = lookup(id);
+			sp->s_flag &= ~S_LCL;
+			sp->s_flag |=  S_GBL;
+			sp->s_area = (zpg != NULL) ? zpg : dot.s_area;
+ 		} while (comma(0));
+		lmode = SLIST;
+		break;
+ 
 	case S_OPS:
 		t1 = addr(&e1);
 		v1 = aindx;
@@ -776,8 +794,7 @@ struct mne *mp;
 	case S_BRA:
 		expr(&e1, 0);
 		outab(ophb);
-		if (mchpcr(&e1)) {
-			v1 = (int) (e1.e_addr - dot.s_addr - 1);
+		if (mchpcr(&e1, &v1, 1)) {
 			if ((v1 < -128) || (v1 > 127))
 				xerr('a', "Branching Range Exceeded.");
 			outab(v1);
@@ -800,6 +817,11 @@ struct mne *mp;
 	if (opcycles == OPCY_NONE) {
 		opcycles = h8pg1[cb[0] & 0xFF];
 	}
+	/*
+	 * Translate To External Format
+	 */
+	if (opcycles == OPCY_NONE) { opcycles  =  CYCL_NONE; } else
+	if (opcycles  & OPCY_NONE) { opcycles |= (CYCL_NONE | 0x3F00); }
 }
 
 VOID
@@ -865,49 +887,6 @@ struct expr *esp;
 }
 
 /*
- * Machine specific initialization.
- * Set up the bit table.
- * Process any setup code.
- */
-VOID
-minit()
-{
-	char **dp;
-
-	/*
-	 * Byte Order
-	 */
-	hilo = 1;
-
-	/*
-	 * Zero Page
-	 */
-	zpg = NULL;
-
-	bp = bb;
-	bm = 1;
-
-	for (dp = dpcode; *dp; dp++) {
-		strcpy(ib,*dp);
-		cp = cb;
-		cpt = cbt;
-		ep = eb;
-		ip = ib;
-		asmbl();
-	}
-}
-
-/*
- * H8/3xx Initialization Coding
- */
-char *dpcode[] = {
-	";	H8/3xx Direct Page Initialization",
-	"	.setdp	0xFF00,_CODE",
-	"",
-	NULL
-};
-
-/*
  * Store `b' in the next slot of the bit table.
  * If no room, force the longer form of the offset.
  */
@@ -952,10 +931,28 @@ getbit()
  * Branch/Jump PCR Mode Check
  */
 int
-mchpcr(esp)
+mchpcr(esp, v, n)
 struct expr *esp;
+int *v;
+int n;
 {
 	if (esp->e_base.e_ap == dot.s_area) {
+		if (v != NULL) {
+#if 1
+			/* Allows branching from top-to-bottom and bottom-to-top */
+ 			*v = (int) (esp->e_addr - dot.s_addr - n);
+			/* only bits 'a_mask' are significant, make circular */
+			if (*v & s_mask) {
+				*v |= (int) ~a_mask;
+			}
+			else {
+				*v &= (int) a_mask;
+			}
+#else
+			/* Disallows branching from top-to-bottom and bottom-to-top */
+			*v = (int) ((esp->e_addr & a_mask) - (dot.s_addr & a_mask) - n);
+#endif
+		}
 		return(1);
 	}
 	if (esp->e_flag==0 && esp->e_base.e_ap==NULL) {
@@ -973,4 +970,40 @@ struct expr *esp;
 	return(0);
 }
 
+/*
+ * Machine specific initialization.
+ * Set up the bit table.
+ * Process any setup code.
+ */
+VOID
+minit()
+{
+	int i;
+
+	/*
+	 * Byte Order
+	 */
+	hilo = 1;
+
+	/*
+	 * Zero Page
+	 */
+	zpg = NULL;
+
+	/*
+	 * Multi-pass Processing
+	 */
+	passlmt = 100;	/* Maximum Pass 1 Loops */
+	if (pass < 2) {
+		for (i=0; i<NB; i++) {
+			bb[i] = 0;
+		}
+	}
+
+	/*
+	 * Reset Bit Pointer
+	 */
+	bp = bb;
+	bm = 1;
+}
 

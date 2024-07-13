@@ -27,6 +27,7 @@
     <IMG SRC = "yellow.gif" ALT = "-">... <A HREF = "#VS13">Building ASxxxx and ASlink with VS2013</A>
     <IMG SRC = "yellow.gif" ALT = "-">... <A HREF = "#VS15">Building ASxxxx and ASlink with VS2015</A>
     <IMG SRC = "yellow.gif" ALT = "-">... <A HREF = "#VS19">Building ASxxxx and ASlink with VS2019</A>
+    <IMG SRC = "yellow.gif" ALT = "-">... <A HREF = "#VS22">Building ASxxxx and ASlink with VS2022</A>
     <IMG SRC = "yellow.gif" ALT = "-">... <A HREF = "#WATCOM">Building ASxxxx and ASlink with Open Watcom</A>
     <IMG SRC = "yellow.gif" ALT = "-">... <A HREF = "#BUILD">Maintenance Files _prep.bat and _clean.bat</A>
     <IMG SRC = "yellow.gif" ALT = "-">... <A HREF = "asxdoc.htm#TOP">Go to Documentation Index</A>
@@ -39,20 +40,21 @@ Linux, DOS, and various flavors of Windows using the Linux  GCC,
 the Cygwin environment, the DJGPP environment, and the graphical
 user   interfaces   and    command    line    environments    of
 MS Visual C++ V6.0,  MS Visual Studio 2005,  2010,  2013,  2015,
-2019, Open Watcom V1.9, Symantec C/C++ V7.2, and Turbo C 3.0.  
+2019  and  2022,  Open Watcom V1.9,   Symantec C/C++ V7.2,   and
+Turbo C 3.0.  
 
    Makefiles  for  Linux,  Cygwin,  DJGPP,  project  files and a
-makefile for Turbo C and psuedo makefiles and project files  for
-VC6,  VS2005,  VS2010,  VS2013, VS2015, VS2019, Open Watcom, and
-Symantec are available to  build  all  the  assemblers  and  the
-linker.  
+makefile for Turbo C and pseudo makefiles and project files  for
+VC6,  VS2005,  VS2010,  VS2013,  VS2015,  VS2019,  VS2022,  Open
+Watcom, and Symantec are available to build all  the  assemblers
+and the linker.  
 
-   Unpack  the  asxv5p40.zip  file into an appropriate directory
+   Unpack  the  asxv5p50.zip  file into an appropriate directory
 using the utility appropriate to your environment.  For  DOS  or
 Windows  the following command line will unpack the distribution
 zip file:  
 
-        pkunzip -d asxv5p40.zip
+        pkunzip -d asxv5p50.zip
 
 
 The  distribution  file  has  been  packed with DOS style end of
@@ -63,7 +65,7 @@ all  lower  case  directories / file names and convert the ascii
 files to local format.  On most systems  the  following  command
 should do the trick:  
 
-        unzip -L -a asxv5p40.zip
+        unzip -L -a asxv5p50.zip
 
 Some systems may require a -LL option to force all lower case.  
 
@@ -78,7 +80,7 @@ documentation  (asxhtml),  NoICE  support files (noice), various
 debug monitors that can be assembled with the ASxxxx  assemblers
 (asmasm), the project directory (project) which contains two ap-
 plications, (PHS) uses the AS6809 assembler and (MFM)  uses  the
-AS89LP assembler, and the packaging directory (zipper).  
+AS89LP assembler, and the packaging directory (zipper).
 
 </PRE></B></H4>
 <IMG width=576 height=5 border=0 SRC="rnbow.gif">
@@ -596,6 +598,70 @@ of anything does a complete rebuild of the program.
 <H5><A HREF= #Index> =&gt; Section Index</A></H5>
 
 <IMG width=576 height=5 border=0 SRC="rnbow.gif">
+<A NAME = "VS22"> </A>
+<H3><B>
+<IMG SRC = "green.gif" ALT = "-">... Building ASxxxx and ASlink with VS2022</A>
+</B></H3>
+
+<H4><B><PRE>
+
+Graphical User Interface 
+
+
+   Each  ASxxxx  Assembler has a VS2022 project file (*.vcxproj)
+located in a subdirectory of \asxv5pxx\asxmak\vs22\build.   Sim-
+ply  enter  this  project  filename  into  the  VS2022  IDE  and
+build/rebuild the assembler.  
+
+
+Command Line Interface 
+
+
+   Open      a      command     prompt     window     in     the
+\asxv5pxx\asxmak\vs22\build directory.  The file make.bat  found
+in  the  directory can be used to invoke the VS2022 command line
+compiler.  The make.bat file assumes that the  Visual  C++  com-
+piler  has  been  installed in the default location.  If this is
+not the case then the lines 
+
+SET MSBUILD="C:\Program Files\Microsoft Visual Studio
+               \2022\Community\MSBuild\Current\bin\MSBuild.exe"
+
+and
+
+call "C:\Program Files\Microsoft Visual Studio
+                \2022\Community\VC\Auxiliary\Build\vcvars32.bat"
+
+must  be changed to match your environment.  The compiled object
+code      modules      will      be      placed      in      the
+\asxv5pxx\asxmak\vs22\build\as----\release directory and the ex-
+ecutable files will be placed in  the  \asxv5pxx\asxmak\vs22\exe
+directory.  
+
+
+
+   The command 
+
+        make all
+
+will compile and link all the ASxxxx assemblers, the ASlink pro-
+gram, and the utility programs asxscn, asxcnv, and s19os9.   The
+make  file  can  make a single program by invoking make with the
+specific assembler, linker, or utility you wish to build:  
+
+        make aslink
+
+
+The  VS2022  command  line  compiler uses the information in the
+corresponding .vcxproj file to compile and link the programs.  
+
+   The  command  'make clean' is not required or valid as a make
+of anything does a complete rebuild of the program.  
+
+</PRE></B></H4>
+<H5><A HREF= #Index> =&gt; Section Index</A></H5>
+
+<IMG width=576 height=5 border=0 SRC="rnbow.gif">
 <A NAME = "WATCOM"> </A>
 <H3><B>
 <IMG SRC = "green.gif" ALT = "-">... Building ASxxxx and ASlink with Open Watcom</A>
@@ -769,6 +835,6 @@ as _prep.bat and removes the compiled executables.
 <B>...  Home Page</B></P>
 </H4>
 
-<H6><P><B>Last Updated: March 2021</B></P></H6>
+<H6><P><B>Last Updated: September 2023</B></P></H6>
 </BODY> 
 </HTML>

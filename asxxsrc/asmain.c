@@ -1,7 +1,7 @@
 /* asmain.c */
 
 /*
- *  Copyright (C) 1989-2021  Alan R. Baldwin
+ *  Copyright (C) 1989-2022  Alan R. Baldwin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -46,7 +46,8 @@
  *		int	main(argc, argv)
  *		VOID	asexit(n)
  *		VOID	asmbl()
- *		FILE *	afile(fn, ft, md)
+ *		VOID	equate(id, *e1, equtype);
+ *		FILE *	afile(fn, ft, wf)
  *		int	fndidx(str)
  *		int	intsiz()
  *		VOID	newdot(nap)
@@ -84,6 +85,12 @@
  *		int	i		argument loop counter
  *		area *	ap		pointer to area structure
  *		def *	dp		pointer to def structure
+ *		char *	lstfil		pointer to .lst filename
+ *		char *	lstext		pointer to .lst file extension
+ *		char *	relfil		pointer to .rel filename
+ *		char *	relext		pointer to .rel file extension
+ *		char *	symfil		pointer to .sym filename
+ *		char *	symext		pointer to .sym file extension
  *
  *	global variables:
  *		int	aflag		-a, make all symbols global flag
@@ -159,12 +166,14 @@
  *		VOID	diag()		assubr.c
  *		VOID	err()		assubr.c
  *		VOID	exprmasks()	asexpr.c
+ *		char *	filespec()	asmain.c
  *		int	fprintf()	c_library
  *		int	int32siz()	asmain.c
  *		VOID	list()		aslist.c
  *		VOID	lstsym()	aslist.c
  *		VOID	mcrinit()	asmcro.c
  *		VOID	minit()		___mch.c
+ *		VOID	multipass()	asmain.c
  *		VOID *	new()		assym.c
  *		VOID	newdot()	asmain.c
  *		int	nxtline()	aslex.c
@@ -189,18 +198,28 @@ main(argc, argv)
 int argc;
 char *argv[];
 {
-	char *p, *q;
-	int c, i;
+	char *p;
+	int c, i, v;
 	struct area *ap;
 	struct def *dp;
 
-	if (intsiz() < 4) {
-		fprintf(stderr, "?ASxxxx-Error-Size of INT32 is not 32 bits or larger.\n\n");
+	char *relfil, *relext;
+
+	if (argc == 1) {
+		usage();
+		exit(ER_NONE);
+	}
+
+	if (intsiz() != 4) {
+		fprintf(stderr, "?ASxxxx-Error-Size of INT32 is not 32 bits.\n\n");
 		exit(ER_FATAL);
 	}
 
 	fprintf(stdout, "\n");
-	q = NULL;
+
+	relfil = "";
+	relext = "rel";
+
 	asmc = NULL;
 	asmp = NULL;
 	for (i=1; i<argc; ++i) {
@@ -208,37 +227,43 @@ char *argv[];
 		if (*p == '-') {
 			if (asmp != NULL) {
 				usage();
+				fprintf(stderr, "?ASxxxx-Error-Options come first.\n");
 				asexit(ER_FATAL);
 			}
 			++p;
 			while ((c = *p++) != 0) {
 				switch(c) {
 				/*
-				 * -h   or NO ARGUMENTS  Show this help list
+				 * -h   Show the help list
 				 */
 				case 'h':
 				case 'H':
-				default:
-					++hflag;
 					usage();
+					exit(ER_NONE);
 					break;
 
 				/*
-				 * Output:
-				 *   -l   Create list   file/outfile[.lst]
-				 *   -o   Create object file/outfile[.rel]
-				 *   -s   Create symbol file/outfile[.sym]
+				 * Enable Object Output (Change name.ext Optional)
+				 *   -o   Enable Object Output, Use Default file1.rel 
+				 *   -o+[ ][name][.ext]  Change name and/or ext
+				 */
+				case 'o':
+				case 'O':
+					++oflag;
+					p = filespec(argc, argv, &i, p, &relfil, &relext, c);
+					break;
+
+				/*
+				 * Create Listing Output
 				 */
 				case 'l':
 				case 'L':
 					++lflag;
 					break;
 
-				case 'o':
-				case 'O':
-					++oflag;
-					break;
-
+				/*
+				 * Create Symbol Output
+				 */
 				case 's':
 				case 'S':
 					++sflag;
@@ -312,6 +337,7 @@ char *argv[];
 				/*
 				 * Assembly Processing Options:",
 				 *   -i   Insert assembler line before input file(s)
+				 *   -n#  Specify number of assembler scanning passes
 				 *   -v   Enable out of range signed / unsigned errors
 				 */
 				case 'i':
@@ -320,6 +346,15 @@ char *argv[];
 						iflag = 0;
 					}
 					++iflag;
+					break;
+
+				case 'n':
+				case 'N':
+					while ((v = digit((c = *p++), 10)) >= 0) {
+						nflglmt = 10*nflglmt + v;
+					}
+					if (nflglmt == 0) nflglmt = -1;
+					--p;
 					break;
 
 				case 'v':
@@ -383,6 +418,13 @@ char *argv[];
 				case 'T':
 					++tflag;
 					break;
+
+				/*
+				 * Unknown Options:
+				 */
+				default:
+					fprintf(stderr, "?ASxxxx-Warning-Unkown option -%c ignored\n", c);
+					break;
 				}
 			}
 		} else {
@@ -396,14 +438,7 @@ char *argv[];
 				insline(p,1);
 			} else {
 				if (asmp == NULL) {
-					q = p;
-					if (++i < argc) {
-						p = argv[i];
-						if (*p == '-') {
-							usage();
-							asexit(ER_FATAL);
-						}
-					}
+					fixrelfil(p, &relfil);
 					asmp = (struct asmf *)
 						new (sizeof (struct asmf));
 					if (asmo != NULL) {
@@ -431,26 +466,25 @@ char *argv[];
 				asmc->flevel = 0;
 				asmc->tlevel = 0;
 				asmc->lnlist = LIST_NORM;
-				asmc->fp = afile(p, "", 0);
+				asmc->fp = afile(p, dsft, 8);
 				strcpy(asmc->afn,afn);
 				asmc->afp = afp;
 			}
 		}
 	}
 	if (asmp == NULL) {
-		if (!hflag) {
-			usage();
-		}
-		asexit(ER_WARNING);
+		usage();
+		fprintf(stderr, "?ASxxxx-Error-Missing input file(s)\n");
+		asexit(ER_FATAL);
 	}
 	if (lflag)
-		lfp = afile(q, "lst", 1);
+		lfp = afile(relfil, "lst", 1);
 	if (oflag)
-		ofp = afile(q, "rel", 1);
+		ofp = afile(relfil, relext, 1);
 	if (lflag && oflag)
-		hfp = afile(q, "hlr", 1);
+		hfp = afile(relfil, "hlr", 1);
 	if (sflag)
-		tfp = afile(q, "sym", 1);
+		tfp = afile(relfil, "sym", 1);
 	exprmasks(2);
 	syminit();
 	curtim = time(NULL);
@@ -483,9 +517,11 @@ char *argv[];
 		lop  = NLPP;
 		incfil = 0;
 		maxinc = 0;
+		alevel = 0;
 		srcline = 0;
 		asmline = 0;
 		incline = 0;
+		trcflags = 0;
 		asmc = asmp;
 		strcpy(afn, asmc->afn);
 		afp = asmc->afp;
@@ -510,6 +546,8 @@ char *argv[];
 		outchk(0,0);
 		symp = &dot;
 		mcrinit();
+		awg = 0;
+		csn = 0;
 		minit();
 		while ((i = nxtline()) != 0) {
 			cp = cb;
@@ -520,11 +558,11 @@ char *argv[];
 			/* JLH: if line begins with ";!", then
 			 * pass this comment on to the output file
 			 */
-			if (oflag && (pass == 1) && (ip[0] == ';') && (ip[1] == '!')) {
+			if (oflag && passJLH && (ip[0] == ';') && (ip[1] == '!')) {
 				fprintf(ofp, "%s\n", ip );
 			}
 
-                        opcycles = OPCY_NONE;
+                        opcycles = CYCL_NONE;
 			if (setjmp(jump_env) == 0)
 				asmbl();
 			if (pass == 2) {
@@ -533,6 +571,7 @@ char *argv[];
 			}
 		}
 		newdot(dot.s_area);	/* Flush area info */
+		multipass();		/* Multiple Pass Option */
 	}
 	if (flevel || tlevel) {
 		err('i');
@@ -549,6 +588,258 @@ char *argv[];
 	}
 	asexit(aserr ? ER_ERROR : ER_NONE);
 	return(0);
+}
+
+/*)Function	VOID	multipass()
+ *
+ *	The function multipass() compares the values of all
+ *	symbols and labels from pass to pass.  At the end of
+ *	pass 2 the assembler gives a warning that a symbol or
+ *	label value is not stable.  This warning normally
+ *	indicates a forward reference has not yet been resolved.
+ *	Use the -n# option to increase the pass 1 scans to fully
+ *	resolve the forward passes.
+ *
+ *	The function multipass() is explicitly enabled by assemblers
+ *	that support variable size instructions.  Any assembler
+ *	using the setbit()/getbit() construct for variable size
+ *	instructions must add the following code in the machine
+ *	function mimit(), where passlmt is the maximum # of passes:
+ *
+ *	passlmt = 100;
+ *	if (pass < 2) {
+ *		for (i=0; i<NB; i++) {
+ *			bb[i] = 0;
+ *		}
+ *	}
+ *
+ *
+ *	local variables:
+ *		int		i	symbol scan loop counter
+ *		int		cflg	a flag indicating a changing value
+ *		int		plmt	pass limit parameter
+ *		struct	sym *	sp	symbol structure pointer
+ *
+ *	global variables:
+ *		int		nflglmt	-n(#) passlmt override
+ *		CONSTANT	NHASH	number of symbol hash buckets
+ *		int		pass	current assembler pass
+ *		int		passcnt	number of passes completeed
+ *		int		passfuz addressing fuzz at end of pass
+ *		int		passJLH	flag indicating pass to dump NOICE comments
+ *		int		passlmt	pass limit value [0 or defined in minit()]
+ *		int		tflag	-t option flag
+ *
+ *	functions called:
+ *		fprintf()		c_library
+ *		symhash()		assym()
+ *
+ *	side effects:
+ *		may change pass number to allow rescan of input files
+ *		may output warnings about changing values
+ *		and update sp->p_addr on each pass
+ */
+VOID
+multipass()
+{
+	int i, cflg, plmt;
+	struct sym *sp;
+
+	/*
+	 * Report Changing Symbols/Labels
+	 */
+	cflg = 0;
+	for (i=0; i<NHASH; i++) {
+		sp = symhash[i];
+		while (sp) {
+			if (sp->s_addr != sp->p_addr) {
+				cflg |= 1;
+				if (pass == 2) {
+					fprintf(stderr, "?ASxxxx-Warning-Value of \"%s\" is changing\n", sp->s_id);
+				}
+			}
+			sp->p_addr = sp->s_addr;
+			sp = sp->s_sp;
+		}
+	}
+	/*
+	 * passlmt Override
+	 */
+	if (nflglmt == 0) {	/* default */
+		plmt = passlmt;
+	} else
+	if (nflglmt > 0) {	/* -n# */
+		plmt = 3 + nflglmt;
+	} else {
+		plmt = 0;	/* -n / -n0 */
+	}
+	/*
+	 * Multi-Pass Processing
+	 */
+	passcnt += 1;
+	if (plmt) {
+		if (pass == 0) {
+			if (tflag) fprintf(stderr, "?ASxxxx-Info-pass = %d", passcnt);
+		}
+		if (passJLH) {
+			if (tflag) fprintf(stderr, ",%d\n", passcnt);
+			passJLH = 0;
+		} else
+		if (pass == 1) {
+			if (tflag) fprintf(stderr, ",%d", passcnt);
+			if (passcnt < (plmt - 2)) {
+				if ((fuzz == 0) && (cflg == 0)) {
+					passJLH = 1;
+				}
+			} else {
+				passJLH = 1;
+			}
+			pass = 0;
+		}
+	} else {
+		passJLH = (pass == 0) ? 1 : 0;
+	}
+	passfuz = fuzz;
+}
+
+/*)Function	char *	filespec(argc, argv, i, p, nam, ext, opt)
+ *
+ *		int		argc	number of arguments
+ *		char *		argv[]	pointer to the list of arguments
+ *		int *		i	pointer to the argument list index
+ *		char *		p	pointer to characters of argv
+ *		char **		nam	pointer to address of filename address
+ *		char **		ext	pointer to address of extension address
+ *		char		opt	option calling this function
+ *
+ *	The function filespec() returns end point of the scanning
+ *
+ *	local variables:
+ *		char *		q	pointer into argv string
+ *		int		pFile	index to beginning of p filename
+ *
+ *	global variables:
+ *		char		ib[]	assembly line buffer used as a temporary
+ *		char *		ip	assembly line buffer character pointer
+ *
+ *	functions called:
+ *		asexit()		asmain.c
+ *		fndidx()		asmain.c
+ *		fprintf()		c_library
+ *		strchr()		c_library
+ *		strlen()		c_library
+ *
+ *	side effects:
+ *		evaluates an option for a file name and/or extension
+ *		and loads relfil/relext respectively
+ */
+char *filespec(argc, argv, i, p, nam, ext, opt)
+int  argc;
+char *argv[];
+int  *i;
+char *p;
+char **nam;
+char **ext;
+int opt;
+{
+	char *q;
+	int pFile;
+
+	if (*p == '+') {
+		/* Skip '+' */
+		++p;
+		if ((*p == '\0') && ((*i + 2) <= (argc - 1))) {
+			p = argv[++(*i)];
+		}
+		/* Forms: -*+name. / -*+.ext / -*+name.ext */
+		pFile = fndidx(p);
+		if ((q = strchr(p + pFile, FSEPX)) != NULL) {
+			if ((p == q) && (*p == FSEPX)) {
+				if (*(++p)) {
+					*ext = p;
+					p += strlen(p);
+				} else {
+					fprintf(stderr, "?ASxxxx-Error-Blank File Extension For -%c+\n", opt);
+					asexit(ER_FATAL);
+				}
+			} else {
+				*q = '\0';
+				if (*p) {
+					*nam = p;
+					p += strlen(p);
+				}
+				if (*(++q)) {
+					*ext = q;
+					p = q + strlen(q);
+				}
+			}
+		} else
+		/* Form -*+name */
+		if (*p != '\0') {
+			*nam = p;
+			p += strlen(p);
+		} else {
+			fprintf(stderr, "?ASxxxx-Error-Missing [name][.ext] After -%c+", opt);
+			asexit(ER_FATAL);
+		}
+	}
+	return(p);
+}
+
+/*)Function	VOID	fixrelfil(p, nam)
+ *
+ *		char *		p	pointer to first path/file/ext
+ *		char **		nam	pointer to address of filename address
+ *
+ *	local variables:
+ *		char *		q	temporary string pointer
+ *		int		i	looping variable
+ *		int		pFile	index to beginninf of p filename
+ *
+ *	global variables:
+ *		char		ib[]	string
+ *		char *		ip	pointer into ib[]
+ *
+ *	functions called:
+ *		int		fndidx()	asmain.c
+ *		char *		strsto()	aslex.c
+ *
+ *	side effects:
+ *		evaluates an option for a file name / extension
+ *		(1) if relfil has a path/name - use it
+ *		      else use p path/name
+ *
+ *		[Notes]
+ *			All output files will use the
+ *			constructed path/filename
+ *
+ *			Object output will use the
+ *			relext (default is .rel)
+ *
+ *			The list, symbol, and helper
+ *			output files will use their
+ *			defaults: .lst, .sym and .hlr
+ */
+VOID fixrelfil(p, relfil)
+char *p;
+char **relfil;
+{
+	char *q;
+	int i, pFile;
+
+ 	if (**relfil == '\0') {
+		ip = ib;		/* Use as temporary string */
+		pFile = fndidx(p);	/* Index to file name of p */
+		for (i=0,q=p; i<pFile; i++) {
+			*ip++ = *q++;
+		}
+		q = p + pFile;		/* Pointer to file.ext string */
+		while ((*q != '.') && (*q != '\0')) {
+			*ip++ = *q++;
+		}
+		*ip = '\0';
+		*relfil = strsto(ib);
+	}
 }
 
 /*)Function	int	intsiz()
@@ -633,19 +924,26 @@ int i;
  *	files and then terminates the program.
  *
  *	local variables:
- *		int	j		loop counter
  *
  *	global variables:
- *		asmf *	asm 		pointer to current assembler file structure
+ *		asmf *	asmc		pointer to first include file structure
  *		asmf *	asmp		pointer to first assembler file structure
  *		FILE *	lfp		list output file handle
+ *		FILE *	hfp		rel helper file handle
  *		FILE *	ofp		relocation output file handle
  *		FILE *	tfp		symbol table output file handle
+ *		FILE *	stderr		standard error output handle
+ *		int	tflag		list following parameters flag
+ *		int	maxinc		maximum include file level
+ *		int	maxmcr		maximum macro expansion level
+ *		int	asmblk		assembler allocation in 1K blocks
+ *		int	mcrblk		macro allocation in 1K blocks
  *
  *	functions called:
+ *		VOID	asfree()	asmcro.c
  *		int	fclose()	c_library
+ *		int	fprintf()	c_library
  *		VOID	exit()		c_library
- *		VOID	old()		assym.c
  *
  *	side effects:
  *		All files closed. Program terminates.
@@ -678,10 +976,19 @@ int i;
 	asfree();
 
 	if (tflag) {
-		fprintf(stderr, "maxinc(include file level)    = %3d\n", maxinc);
-		fprintf(stderr, "maxmcr(macro expansion level) = %3d\n", maxmcr);
-		fprintf(stderr, "asmblk(1K Byte Allocations)   = %3d\n", asmblk);
-		fprintf(stderr, "mcrblk(1K Byte Allocations)   = %3d\n", mcrblk);
+		if (passlmt || nflglmt) {
+			fprintf(stderr, "?ASxxxx-Info-pass count                    = %3d\n", passcnt);
+ 		        if (passfuz) {
+				fprintf(stderr, "?ASxxxx-Info-residual fuzz                 = %3d\n", passfuz);
+	 	        }
+		}
+		fprintf(stderr, "?ASxxxx-Info-maxinc(include file level)    = %3d\n", maxinc);
+		fprintf(stderr, "?ASxxxx-Info-maxmcr(macro expansion level) = %3d\n", maxmcr);
+		fprintf(stderr, "?ASxxxx-Info-mcrcnt(macro definitions)     = %3d\n", mcrcnt);
+		fprintf(stderr, "?ASxxxx-Info-mcrexe(macros executed)       = %3d\n", mcrexe);
+		fprintf(stderr, "?ASxxxx-Info-inlexe(inlines executed)      = %3d\n", inlexe);
+		fprintf(stderr, "?ASxxxx-Info-asmblk(1K Byte Allocations)   = %3d\n", asmblk);
+		fprintf(stderr, "?ASxxxx-Info-mcrblk(1K Byte Allocations)   = %3d\n", mcrblk);
 		fprintf(stderr, "\n");
 	}
 
@@ -714,6 +1021,7 @@ int i;
  *		char	opt[]		options string
  *		char	fn[]		filename string
  *		char *	p		pointer into a string
+ *		char *	q		pointer to macro argument string
  *		int	d		temporary value
  *		int	uf		area options
  *		int	con_ovr		concatenate / overlay flag
@@ -732,6 +1040,8 @@ int i;
  *
  *	global variables:
  *		area *	areap		pointer to an area structure
+ *		int	alevel		area stack pointer
+ *		struct	area *astack[]	area stack
  *		bank *	bankp		pointer to a  bank structure
  *		char	ctype[]		array of character types, one per
  *					ASCII character
@@ -760,6 +1070,8 @@ int i;
  *		sym *	symp		pointer to a symbol structure
  *		char	tb[]		Title string buffer
  *		int	tlevel		current conditional level
+ *		int	csn		'C' Style Numbers option
+ *		int	awg		default size value option
  *
  *	functions called:
  *		a_uint	absexpr()	asexpr.c
@@ -797,6 +1109,7 @@ int i;
  *		VOID	outrw()		asout.c
  *		VOID	phase()		asmain.c
  *		VOID	qerr()		assubr.c
+ *		int	skpcomma()	aslex.c
  *		int	strcmp()	c_library
  *		char *	strcpy()	c_library
  *		char *	strncpy()	c_library
@@ -822,11 +1135,12 @@ asmbl()
 	int  equtype;
 	char opt[NCPS];
 	char fn[FILSPC+FILSPC];
-	char *p;
+	char *p, *q;
 	int d, nc, uf;
 	int con_ovr, rel_abs, npg_pag, csg_dsg;
 	a_uint base, size, map, n, v;
-	int skp, cnt, flags;
+	int skp, flags;
+	a_uint cnt;
 	FILE * fp;
 	int m_type;
 
@@ -848,9 +1162,17 @@ asmbl()
 	if (mcrprc(O_CHECK) != 0) {
 		return;
 	}
-
 loop:
 	if ((c=endline()) == 0) { return; }
+
+	/*
+	 * Clear Expression (On Looping)
+	 */
+	clrexpr(&e1);
+	/*
+	 * Provide Option To Restart Scan
+	 */
+	p = ip - 1;
 
 	/*
 	 * If the first character is a digit then assume
@@ -871,13 +1193,34 @@ loop:
 		if (flevel)
 			return;
 		n = 0;
+		equ_ip = ip - 1;
 		while ((d = digit(c, 10)) >= 0) {
 			n = 10*n + d;
 			c = get();
 		}
-		if (c != '$' || get() != ':')
+		if (c != '$' || get() != ':') {
+			/*
+			 * Evaluate any arguments
+			 * as a default size value
+			 */
+			if (awg) {
+	                	ip = equ_ip;
+				expr(&e1, 0);
+				switch(awg) {
+				case 1:	outrb(&e1, 0);	break;
+				case 2:	outrw(&e1, 0);	break;
+				case 3:	outr3b(&e1, 0);	break;
+				case 4:	outr4b(&e1, 0);	break;
+				default:	break;
+				}
+				if (comma(0)) {
+					goto loop;
+				}
+				lmode = CLIST;
+				return;
+			}
 			qerr();
-
+		}
 		tp = symp->s_tsym;
 		while (tp) {
 			if (n == tp->t_num) {
@@ -919,6 +1262,14 @@ loop:
 		}
 	}
 	getid(id, c);
+	/* Disallow Constants */
+	mp = mlookup(id);
+	if ((mp != NULL) && (mp->m_type == S_CONST)) {
+		xerr('q', "Invalid Use Of A Predefined Constant");
+	}
+	/* Save position for Macro processing */
+	q = ip;
+	/* Skip white space to next character */
 	c = getnb();
 	/*
 	 * If the next character is a : then a label is being processed.
@@ -996,12 +1347,14 @@ loop:
 		 * Alternates for =, ==, and =:
 		 */
 		equ_ip = ip;	 /* Save current char pointer for case equate not found. */
-		getid(equ, -1);
-                if ((mp = mlookup(equ)) == NULL || mp->m_type != S_EQU) {
-                	ip = equ_ip;
-                } else {
-                	equate(id, &e1, mp->m_valu);
-                	goto loop;
+		if (more() && (ctype[c = getnb()] == LETTER)) {
+			getid(equ, c);
+                	if ((mp = mlookup(equ)) == NULL || mp->m_type != S_EQU) {
+                		ip = equ_ip;
+			} else {
+	                	equate(id, &e1, mp->m_valu);
+	                	goto loop;
+			}
 		}
 	}
 	/*
@@ -1015,6 +1368,26 @@ loop:
 	mp = mlookup(id);
 	np = nlookup(id);
 	if ((mp == NULL) && (np == NULL)) {
+		/*
+		 * Evaluate any arguments
+		 * as a default size value
+		 */
+		if (awg) {
+			ip = p;
+			expr(&e1, 0);
+			switch(awg) {
+			case 1:	outrb(&e1, 0);	break;
+			case 2:	outrw(&e1, 0);	break;
+			case 3:	outr3b(&e1, 0);	break;
+			case 4:	outr4b(&e1, 0);	break;
+			default:	break;
+			}
+			if (comma(0)) {
+				goto loop;
+			}
+			lmode = CLIST;
+			return;
+		}
 		if (!flevel) {
 			err('o');
 		}
@@ -1059,7 +1432,7 @@ loop:
 				    (xp->m_type == S_CONDITIONAL) &&
 				    (xp->m_valu != O_IF)) {
 			    		mp = xp;
-					comma(0);
+					skpcomma();	/* Skip an immediate (,) */
 				} else {
 					ip = p;
 				}
@@ -1126,6 +1499,7 @@ loop:
 				case O_IFIDN:	/* .if idn,.... */
 				case O_IFDIF:	/* .if dif,.... */
 					getxstr(id);
+					comma(0);
 					getxstr(equ);
 					n = symeq(id, equ, zflag);
 					switch (mp->m_valu) {
@@ -1220,6 +1594,7 @@ loop:
 				p = ip;
 				strcpy(id,".iif");
 				getid(&id[4],getnb());
+				skpcomma();	/* Skip an immediate (,) */
 				xp = mlookup(id);
 				if ((xp != NULL) &&
 				    (xp->m_type == S_CONDITIONAL) &&
@@ -1333,6 +1708,7 @@ loop:
 			case O_IIFIDN:	/* .iif idn,.... */
 			case O_IIFDIF:	/* .iif dif,.... */
 				getxstr(id);
+				comma(0);
 				getxstr(equ);
 				n = symeq(id, equ, zflag);
 				switch (mp->m_valu) {
@@ -1420,7 +1796,8 @@ loop:
 						if (symeq(id, "lst", 1)) { flags |= LIST_LST; } else
 						if (symeq(id, "md" , 1)) { flags |= LIST_MD;  } else
 						if (symeq(id, "me" , 1)) { flags |= LIST_ME;  } else
-						if (symeq(id, "meb", 1)) { flags |= LIST_MEB; } else {
+						if (symeq(id, "meb", 1)) { flags |= LIST_MEB; } else
+						if (symeq(id, "mel", 1)) { flags |= LIST_MEL; } else {
 							err('u');
 						}
 					}
@@ -1465,6 +1842,53 @@ loop:
 		}
 		return;
 
+	case S_TRACE:
+		flags = 0;
+		while ((c=endline()) != 0) {
+			if (c == ',') {
+				c = getnb();
+			}
+			if (c == '(') {
+				do {
+					if ((c = getnb()) == '!') {
+						flags |= TRC_NOT;
+ 					} else {
+						unget(c);
+						getid(id, -1);
+						if (symeq(id, "ins", 1)) { flags |= TRC_INS; } else
+						if (symeq(id, "asm", 1)) { flags |= TRC_ASM; } else
+						if (symeq(id, "inc", 1)) { flags |= TRC_INC; } else
+						if (symeq(id, "mcr", 1)) { flags |= TRC_MCR; } else
+						if (symeq(id, "rpt", 1)) { flags |= TRC_RPT; } else {
+							err('u');
+						}
+					}
+					c = endline();
+				} while (c == ',') ;
+				if (c != ')') {
+					qerr();
+				}
+			} else {
+				flags = TRC_ALL;
+			}
+		}
+		if (flags == 0) {
+			flags = TRC_ALL;
+		} else
+		if (flags & TRC_NOT) {
+			switch(mp->m_valu) {
+			case O_TRC:	trcflags = TRC_NONE;	break;
+			case O_NTRC:	trcflags = TRC_ALL;	break;
+			default:				break;
+			}
+		}
+		switch(mp->m_valu) {
+		case O_TRC:	trcflags |=  (flags & TRC_ALL);	break;
+		case O_NTRC:	trcflags &= (~flags & TRC_ALL);	break;
+		default:				break;
+		}
+		return;
+
 	case S_PAGE:
 		lmode = NLIST;
 		if (more()) {
@@ -1488,6 +1912,23 @@ loop:
 	 * process the assembler directives here.
 	 */
 	switch (m_type) {
+
+	case S_OPTN:	/* .enabl (op = 1), .dsabl (op = 0) */
+		if ((c = getnb()) == '(') {
+			do {
+				getid(id, -1);
+				/* 'C' Style Numbers - 0nnn (Octal), 0xnnn (Hex), Else Decimal */
+				if (symeq(id, "csn", 1)) { csn = mp->m_flag; } else
+				/* External Machine Options */
+				if (*mchoptn_ptr && ((*mchoptn_ptr)(id, (int) (mp->m_valu)))) { ; } else {
+					err('u');
+				}
+			} while ((c = getnb()) == ',');
+			if (c != ')')
+				qerr();
+		}
+		lmode = SLIST;
+		break;
 
 	case S_HEADER:
 		switch(mp->m_valu) {
@@ -1561,9 +2002,9 @@ loop:
 			 *	use path of file opening the include file
 			 */
 			if (fndidx(fn + afp) != 0) {
-				afilex(fn + afp, "");
+				afilex(fn + afp, "", 8);
 			} else {
-				afilex(fn, "");
+				afilex(fn, "", 8);
 			}
 			/*
 			 * Open File
@@ -1604,9 +2045,9 @@ loop:
 			 *	use path of file opening the .incbin file
 			 */
 			if (fndidx(fn + afp) != 0) {
-				afilex(fn + afp, "");
+				afilex(fn + afp, "", 8);
 			} else {
-				afilex(fn, "");
+				afilex(fn, "", 8);
 			}
 			/*
 			 * Skip Count
@@ -1618,18 +2059,19 @@ loop:
 			/*
 			 * Insert Count
 			 */
-#ifdef	LONGINT
-			cnt = 0x7FFFFFFFl;
-#else
-			cnt = 0x7FFFFFFF;
-#endif
+			cnt = ~0;
 			comma(0);
 			if (more())
-				cnt = (int) absexpr();
+				cnt = absexpr();
 			/*
 			 * Open File
 			 */
-    			if ((fp = fopen(afntmp, "rb")) == NULL) {
+#ifdef	DECUS
+			p = "rn";
+#else
+			p = "rb";
+#endif
+    			if ((fp = fopen(afntmp, p)) == NULL) {
 				xerr('i', "File not found.");
 				break;
 			}
@@ -1666,6 +2108,22 @@ loop:
 		break;
 
 	case S_AREA:
+		if (mp->m_valu == O_POP) {
+			if (alevel == 0) {
+				xerr('q', "Area Stack Is Empty");
+			}
+			newdot(astack[--alevel]);
+			lmode = SLIST;
+			break;
+		} else
+		if (mp->m_valu == O_PSH) {
+			if (alevel >= 16) {
+				xerr('q', "Area Stack Is Full");
+			}
+			astack[alevel++] = dot.s_area;
+			lmode = SLIST;
+			break;
+		}
 		getid(id, -1);
 		uf  = 0;
 		con_ovr = 0;
@@ -1676,33 +2134,49 @@ loop:
 		if ((c = getnb()) == '(') {
 			do {
 				getid(opt, -1);
-				mp = mlookup(opt);
-				if (mp && mp->m_type == S_ATYP) {
-					v = mp->m_valu;
-					uf |= (int) v;
-					if (v == A_BNK) {
-						if ((c = getnb()) != '=')
-							qerr();
-						if (!more())
-							qerr();
-						getid(opt, -1);
-						if ((bp = blookup(opt)) == NULL) {
-							err('u');
-							uf &= (int) ~v;
-						}
+				if (symeq(opt, "BANK", 1)) {
+					uf |= A_BNK;
+					if ((c = getnb()) != '=')
+						qerr();
+					if (!more())
+						qerr();
+					getid(opt, -1);
+					if ((bp = blookup(opt)) == NULL) {
+						err('u');
+						uf &= ~A_BNK;
 					}
-					if (v & A_CON) {
-						con_ovr = (int) v;
-					} else
-					if (v & A_REL) {
-						rel_abs = (int) v;
-					} else
-					if (v & A_NOPAG) {
-						npg_pag = (int) v;
-					} else
-					if (v & A_CSEG) {
-						csg_dsg = (int) v;
-					}
+				} else
+				if (symeq(opt, "CON", 1)) {
+					uf |= A_CON;
+					con_ovr = A_CON;
+				} else
+				if (symeq(opt, "OVR", 1)) {
+					uf |= A_OVR;
+					con_ovr = A_OVR;
+				} else
+				if (symeq(opt, "REL", 1)) {
+					uf |= A_REL;
+					rel_abs = A_REL;
+				} else
+				if (symeq(opt, "ABS", 1)) {
+					uf |= A_ABS;;
+					rel_abs = A_ABS;
+				} else
+				if (symeq(opt, "NOPAG", 1)) {
+					uf |= A_NOPAG;
+					npg_pag = A_NOPAG;
+				} else
+				if (symeq(opt, "PAG", 1)) {
+					uf |= A_PAG;
+					npg_pag = A_PAG;
+				} else
+				if (symeq(opt, "CSEG", 1)) {
+					csg_dsg = area[0].a_flag & (A_CSEG | A_BYTES);
+					uf |= csg_dsg;
+				} else
+				if (symeq(opt, "DSEG", 1)) {
+					csg_dsg = area[1].a_flag & (A_DSEG | A_BYTES);
+					uf |= csg_dsg;
 				} else {
 					err('u');
 				}
@@ -1766,9 +2240,7 @@ loop:
 			ap->a_fuzz = 0;
 			ap->a_bn = NULL;
 			ap->a_bndry = 0;
-			/*
-			 * The default PC increment is defined in ___pst.c as area[0]
-			 */
+
 			ap->a_flag = (uf & A_DSEG) ? uf : uf | (area[0].a_flag & A_BYTES);
 
 			areap = ap;
@@ -1786,32 +2258,31 @@ loop:
 		if ((c = getnb()) == '(') {
 			do {
 				getid(opt, -1);
-				mp = mlookup(opt);
-				if (mp && mp->m_type == S_BTYP) {
-					v = mp->m_valu;
-					uf |= (int) v;
-					if (v == B_BASE) {
-						if ((c = getnb()) != '=')
-							qerr();
-						base = absexpr();
-					} else
-					if (v == B_SIZE) {
-						if ((c = getnb()) != '=')
-							qerr();
-						size = absexpr();
-					} else
-					if (v == B_FSFX) {
-						if ((c = getnb()) != '=')
-							qerr();
-						if ((ctype[c = getnb()] & (LETTER|DIGIT)) == 0)
-							qerr();
-						getid(opt, c);
-					} else
-					if (v == B_MAP) {
-						if ((c = getnb()) != '=')
-							qerr();
-						map = absexpr();
-					}
+				if (symeq(opt, "BASE", 1)) {
+					uf |= B_BASE;
+					if ((c = getnb()) != '=')
+						qerr();
+					base = absexpr();
+				} else
+				if (symeq(opt, "SIZE", 1)) {
+					uf |= B_SIZE;
+					if ((c = getnb()) != '=')
+						qerr();
+					size = absexpr();
+				} else
+				if (symeq(opt, "FSFX", 1)) {
+					uf |= B_FSFX;
+					if ((c = getnb()) != '=')
+						qerr();
+					if ((ctype[c = getnb()] & (LETTER|DIGIT)) == 0)
+						qerr();
+					getid(equ, c);
+				} else
+				if (symeq(opt, "MAP", 1)) {
+					uf |= B_MAP;
+					if ((c = getnb()) != '=')
+						qerr();
+					map = absexpr();
 				} else {
 					err('u');
 				}
@@ -1843,10 +2314,10 @@ loop:
 			}
 			if (uf & B_FSFX) {
 				if (flags & B_FSFX) {
-					if (!symeq(opt, bp->b_fsfx, 1))
+					if (!symeq(equ, bp->b_fsfx, 1))
 						err('m');
 				} else {
-					bp->b_fsfx  = strsto(opt);
+					bp->b_fsfx  = strsto(equ);
 					bp->b_flag |= B_FSFX;
 				}
 			}
@@ -1863,7 +2334,7 @@ loop:
 			bp = (struct bank *) new (sizeof(struct bank));
 			bp->b_bp = bankp;
 			bp->b_id = strsto(id);
-			bp->b_fsfx = (uf & B_FSFX) ? strsto(opt) : NULL;
+			bp->b_fsfx = (uf & B_FSFX) ? strsto(equ) : NULL;
 			bp->b_ref = bankp->b_ref + 1;
 			bp->b_base = (uf & B_BASE) ? base : 0;
 			bp->b_size = (uf & B_SIZE) ? size : 0;
@@ -1888,29 +2359,25 @@ loop:
 
 	case S_RADIX:
 		if (more()) {
-			switch (getnb()) {
-			case 'b':
-			case 'B':
-				radix = 2;
-				break;
-			case '@':
-			case 'o':
-			case 'O':
-			case 'q':
-			case 'Q':
-				radix = 8;
-				break;
-			case 'd':
-			case 'D':
-				radix = 10;
-				break;
-			case 'h':
-			case 'H':
-			case 'x':
-			case 'X':
-				radix = 16;
-				break;
-			default:
+			switch (ccase[getnb()& 0x7F]) {
+			case 'b':	radix = 2;	break;	/* B */
+			case '@':				/* @ */
+			case 'o':				/* O */
+			case 'q':	radix = 8;	break;	/* Q */
+			case 'd':	radix = 10;	break;	/* D */
+			case 'h':				/* H */
+			case 'x':	radix = 16;	break;	/* X */
+			default:				/* 2, 8, 10, 16 */
+				unget(c);
+				expr(&e1, 0);
+				if (is_abs(&e1)) {
+					v = e1.e_addr;
+					if ((v == 2) || (v == 8) ||
+					   (v == 10) || (v == 16)) {
+						radix = (int) v;
+						break;
+					}
+				}
 				radix = 10;
 				qerr();
 				break;
@@ -1965,6 +2432,19 @@ loop:
 		 * Intrinsic size
 		 */
 		n = 1 + ((dot.s_area->a_flag) & A_BYTES);
+		/*
+		 * Blank argument outputs a '0' value
+		 */
+		if (!more()) {
+			switch(size) {
+			default:
+			case 1:	outab(0); break;
+			case 2: outaw(0); break;
+			case 3: outa3b(0); break;
+			case 4: outa4b(0); break;
+			}
+			break;
+		}
 		/*
 		 * Intrinsic size == 1	or
 		 * Intrinsic size == Data size
@@ -2077,99 +2557,91 @@ loop:
 		break;
 
 	case S_ASCIX:
-		switch(mp->m_valu) {
-		case O_ASCII:
-		case O_ASCIZ:
+		size = 1 + ((dot.s_area->a_flag) & A_BYTES);
+		cnt = 0;
+		n = 0;
+		v = 0;
+		while (more()) {
 			d = getdlm();
-			size = 1 + ((dot.s_area->a_flag) & A_BYTES);
-			cnt = 0;
-			v = 0;
-			while ((c = getmap(d)) >= 0) {
-				if ((int) hilo) {
-					cnt += 1;
-					v |= ((c & 0x7F) << 8 * (size - cnt));
-				} else {
-					v |= ((c & 0x7F) << 8 * cnt);
-					cnt += 1;
+			if (d == LFTERM) {
+				/*
+				 * Isolate the term '(...)' so that
+				 * following arithmetic characters
+				 * like %,^,&,*,-,+,!,|,/ don't cause
+				 * expr() to cough on the evaluation.
+				 */
+				p = ip - 1;	/* position of LFTERM */
+				d = 1;
+				while (d != 0) {
+					c = getnb();
+					if (c == LFTERM) d += 1;
+					if (c == RTTERM) d -= 1;
 				}
-				if ((cnt % size) == 0) {
-					switch(size) {
-					default:
-					case 1:	outab(v); break;
-					case 2: outaw(v); break;
-					case 3: outa3b(v); break;
-					case 4: outa4b(v); break;
-					}
-					cnt = 0;
-					v = 0;
-				}
-			}
-			if (mp->m_valu == O_ASCIZ) {
-				cnt += 1;
-			}
-			if (cnt != 0) {
-				switch(size) {
-				default:
-				case 1:	outab(v); break;
-				case 2: outaw(v); break;
-				case 3: outa3b(v); break;
-				case 4: outa4b(v); break;
-				}
-			}
-			break;
-
-		case O_ASCIS:
-			d = getdlm();
-			size = 1 + ((dot.s_area->a_flag) & A_BYTES);
-			cnt = 0;
-			v = 0;
-			if ((c = getmap(d)) < 0) {
-				if ((int) hilo) {
-					cnt += 1;
-					v = 0x80 << 8 * (size - cnt);
-				} else {
-					v = 0x80 << 8 * cnt;
-					cnt += 1;
-				}
-			} else {
-				while (c >= 0) {
-					c &= 0x7F;
-					if ((nc = getmap(d)) < 0) {
+				q = ip;	/* Save position following RTTERM */
+				c = *q; /* Save the character following RTTERM */
+				*q = 0; /* Make a terminator */
+				ip = p; /* Restore pointer to LFTERM and evaluate */
+				clrexpr(&e1);
+				expr(&e1, 0);
+				*q = c;	/* Restore character */
+				ip = q;	/* Restore pointer */
+				abscheck(&e1);
+				c = (int) e1.e_addr;
+				if (mp->m_valu == O_ASCIS) {
+					if (!more()) {
 						c |= 0x80;
 					}
-					if ((int) hilo) {
-						cnt += 1;
-						v |= (c << 8 * (size - cnt));
-					} else {
-						v |= (c << 8 * cnt);
-						cnt += 1;
+					n += 1;
+				}
+				pckchr(size, c, &v, &cnt);
+			} else {
+				switch(mp->m_valu) {
+				case O_ASCII:
+				case O_ASCIZ:
+					while ((c = getmap(d)) >= 0) {
+						pckchr(size, c, &v, &cnt);
 					}
-					if ((cnt % size) == 0) {
-						switch(size) {
-						default:
-						case 1:	outab(v); break;
-						case 2: outaw(v); break;
-						case 3: outa3b(v); break;
-						case 4: outa4b(v); break;
+					break;
+				case O_ASCIS:
+					if ((c = getmap(d)) > 0) {
+						while (c >= 0) {
+							c &= 0x7F;
+							if ((nc = getmap(d)) < 0) {
+								if (!more()) {
+									c |= 0x80;
+								}
+							}
+							n += 1;
+							pckchr(size, c, &v, &cnt);
+							c = nc;
 						}
-						cnt = 0;
-						v = 0;
 					}
-					c = nc;
+					break;
+				default:
+					break;
 				}
 			}
-			if (cnt != 0) {
-				switch(size) {
-				default:
-				case 1:	outab(v); break;
-				case 2: outaw(v); break;
-				case 3: outa3b(v); break;
-				case 4: outa4b(v); break;
-				}
+		}
+		switch(mp->m_valu) {
+		case O_ASCIZ:
+			pckchr(size, '\0', &v, &cnt);
+			break;
+		case O_ASCIS:
+			if (n == 0) {
+				pckchr(size, 0x80, &v, &cnt);
 			}
 			break;
 		default:
 			break;
+		}
+		if (cnt != 0) {
+			switch(size) {
+			default:
+			case 1:	outab(v); break;
+			case 2: outaw(v); break;
+			case 3: outa3b(v); break;
+			case 4: outa4b(v); break;
+			}
 		}
 		break;
 
@@ -2335,10 +2807,11 @@ loop:
 	 * which handles all the assembler mnemonics.
 	 *
 	 * MACRO Definitions take precedence
-	 * over machine specific mmnemonics.
+	 * over machine specific mnemonics.
 	 */
 	default:
 		if (np != NULL) {
+			ip = q;
 			macro(np);
 			lmode = SLIST;
 		} else {
@@ -2372,6 +2845,60 @@ loop:
 		break;
 	}
 	goto loop;
+}
+
+/*)Function	VOID	pckchr(size, c, v, cnt)
+ *
+ *		a_uint		size		machine size
+ *		int		c		character to pack
+ *		a_uint		*v		pointer to value of packed bytes
+ *		a_uint		*cnt		pointer to packing byte count
+ *
+ *	The function pckchr() packs a character into a multi-character
+ *	value based on the machine size and hilo byte ordering.
+ *
+ *	local variables:
+ *		none
+ *
+ *	global variables:
+ *		int		hilo		machine byte order
+ *
+ *	functions called:
+ *		VOID		outab()		asout.c
+ *		VOID		outaw()		asout.c
+ *		VOID		outa3b()	asout.c
+ *		VOID		outa4b()	asout.c
+ *
+ *	side effects:
+ *		The function updates the packed value and the
+ *		character count.  When enough characters have
+ *		been packed the packed value is output.
+ */
+VOID
+pckchr(size, c, v, cnt)
+a_uint size;
+int c;
+a_uint *v;
+a_uint *cnt;
+{
+	if ((int) hilo) {
+		*cnt += 1;
+		*v |= ((c & 0xFF) << 8 * (size - (*cnt)));
+	} else {
+		*v |= ((c & 0xFF) << 8 * (*cnt));
+		*cnt += 1;
+	}
+	if ((*cnt % size) == 0) {
+		switch(size) {
+		default:
+		case 1:	outab(*v); break;
+		case 2: outaw(*v); break;
+		case 3: outa3b(*v); break;
+		case 4: outa4b(*v); break;
+		}
+		*cnt = 0;
+		*v = 0;
+	}
 }
 
 /*)Function	VOID	boundary(n)
@@ -2595,6 +3122,9 @@ a_uint equtype;
  *					2 ==>> binary read
  *					3 ==>> binary write
  *
+ *					add 8 to the wf code to allow
+ *					any extension on a file
+ *
  *	The function afile() opens a file for reading or writing.
  *
  *	afile() returns a file handle for the opened file or aborts
@@ -2602,6 +3132,7 @@ a_uint equtype;
  *
  *	local variables:
  *		FILE *	fp		file handle for opened file
+ *		char *	frmt		read/write format string
  *
  *	global variables:
  *		char	afn[]		afile() constructed filespec
@@ -2629,12 +3160,12 @@ int wf;
 	FILE *fp;
 	char *frmt;
 
-	afilex(fn, ft);
+	afilex(fn, ft, wf);
 
 	/*
 	 * Select (Binary) Read/Write
 	 */
-	switch(wf) {
+	switch(wf & 3) {
 	default:
 	case 0:	frmt = "r";	break;
 	case 1:	frmt = "w";	break;
@@ -2658,10 +3189,17 @@ int wf;
 	return (fp);
 }
 
-/*)Function	VOID	afilex(fn, ft)
+/*)Function	VOID	afilex(fn, ft, wf)
  *
  *		char *	fn		file specification string
  *		char *	ft		file type string
+ *		int	wf		0 ==>> read
+ *					1 ==>> write
+ *					2 ==>> binary read
+ *					3 ==>> binary write
+ *
+ *					add 8 to the wf code to allow
+ *					any extension on a file
  *
  *	The function afilex() processes the file specification string:
  *		(1)	If the file type specification string ft
@@ -2680,7 +3218,6 @@ int wf;
  *		int	c		character value
  *		char *	p1		pointer into filespec string afntmp
  *		char *	p2		pointer into filespec string fn
- *		char *	p3		pointer to filetype string ft
  *
  *	global variables:
  *		char	afntmp[]	afilex() constructed filespec
@@ -2698,9 +3235,10 @@ int wf;
  */
 
 VOID
-afilex(fn, ft)
+afilex(fn, ft, wf)
 char *fn;
 char *ft;
+int wf;
 {
 	char *p1, *p2;
 	int c;
@@ -2720,27 +3258,36 @@ char *ft;
 	 * Skip to File Extension separator
 	 */
 	p1 = strrchr(&afntmp[afptmp], FSEPX);
-
 	/*
-	 * Copy File Extension
+	 * Allow any extension if FSEPX
+	 * is present. <path><name><FSEPX>...
 	 */
-	 p2 = ft;
-	 if (*p2 == 0) {
-		if (p1 == NULL) {
-			p2 = dsft;
-		} else {
-			p2 = strrchr(&fn[afptmp], FSEPX) + 1;
+	if ((wf & 8) && (p1 != NULL)) {
+		/*
+		 * Remove FSEPX when extension is BLANK
+		 */
+		if (*(p1+1) == 0) {
+			*p1 = 0;
 		}
+	/*
+	 * Else all reads and writes default to ft.
+	 * <path><name>... -> <path><name><FSEPX><ft>
+	 */
+	} else {
+		/*
+		 * Copy File Extension
+		 */
+		p2 = ft;
+		if (p1 == NULL) {
+			p1 = &afntmp[strlen(afntmp)];
+		}
+		*p1++ = FSEPX;
+		while ((c = *p2++) != 0) {
+			if (p1 < &afntmp[FILSPC-1])
+				*p1++ = c;
+		}
+		*p1++ = 0;
 	}
-	if (p1 == NULL) {
-		p1 = &afntmp[strlen(afntmp)];
-	}
-	*p1++ = FSEPX;
-	while ((c = *p2++) != 0) {
-		if (p1 < &afntmp[FILSPC-1])
-			*p1++ = c;
-	}
-	*p1++ = 0;
 }
 
 /*)Function	int	fndidx(str)
@@ -2790,11 +3337,9 @@ char *str;
  *		area *	nap		pointer to the new area structure
  *
  *	The function newdot():
- *		(1)	copies the current values of fuzz and the last
- *			address into the current area referenced by dot
- *		(2)	loads dot with the pointer to the new area and
+ *		(1)	loads dot with the pointer to the new area and
  *			loads the fuzz and last address parameters
- *		(3)	outall() is called to flush any remaining
+ *		(2)	outall() is called to flush any remaining
  *			bufferred code from the old area to the output
  *
  *	global variables:
@@ -2804,10 +3349,10 @@ char *str;
  *					variable length instruction formats
  *
  *	functions called:
- *		none
+ *		outall()		asout.c
  *
  *	side effects:
- *		Current area saved, new area loaded, buffers flushed.
+ *		Area changed and buffers flushed.
  */
 
 VOID
@@ -2859,13 +3404,16 @@ a_uint a;
 }
 
 char *usetxt[] = {
-	"Usage: [-Options] [-Option with arg] file",
-	"Usage: [-Options] [-Option with arg] outfile file1 [file2 ...]",
+	"Usage: [-Options] [-Option with arg] file1 [file2 ...]",
 	"  -h   or NO ARGUMENTS  Show this help list",
 	"Output:",
-	"  -l   Create list   file/outfile[.lst]",
-	"  -o   Create object file/outfile[.rel]",
-	"  -s   Create symbol file/outfile[.sym]",
+	"  -o   Enable  object output  (-o+ change file1[.rel])",
+	"    -o+  Conditional Options   -o+[ ][name][.ext]",
+	"    '-o+.ext'      (or)  '-o+  .ext'      ->  file1.ext ",
+	"    '-o+name'      (or)  '-o+  name'      ->  name[.rel]",
+	"    '-o+name.ext'  (or)  '-o+  name.ext'  ->   name.ext",
+	"  -l   Create list   file1[.lst]   (file1  <-  name)",
+	"  -s   Create symbol file1[.sym]   (file1  <-  name)",
 	"Listing:",
 	"  -d   Decimal listing",
 	"  -q   Octal   listing",
@@ -2882,11 +3430,12 @@ char *usetxt[] = {
 	"Assembly:",
 	"  -i   Insert assembler line before input file(s)",
 	"  -v   Enable out of range signed / unsigned errors",
+	"  -n#  Set the maximum number of 'Pass 2' scans",
 	"Symbols:",
 	"  -a   All user symbols made global",
 	"  -g   Undefined symbols made global",
 	"  -z   Disable case sensitivity for symbols",
-#if (NOICE || SDCDB)
+#if NOICE | SDCDB
 	"Debugging:",
 #if NOICE
 	"  -j   Enable NoICE Debug Symbols",
@@ -2931,11 +3480,11 @@ usage()
 {
 	char   **dp;
 
-	fprintf(stderr, "\nASxxxx Assembler %s  (%s)", VERSION, cpu);
-	fprintf(stderr, "\nCopyright (C) %s  Alan R. Baldwin", COPYRIGHT);
-	fprintf(stderr, "\nThis program comes with ABSOLUTELY NO WARRANTY.\n\n");
+	fprintf(stdout, "\nASxxxx Assembler %s  (%s)", VERSION, cpu);
+	fprintf(stdout, "\nCopyright (C) %s  Alan R. Baldwin", COPYRIGHT);
+	fprintf(stdout, "\nThis program comes with ABSOLUTELY NO WARRANTY.\n\n");
 	for (dp = usetxt; *dp; dp++) {
-		fprintf(stderr, "%s\n", *dp);
+		fprintf(stdout, "%s\n", *dp);
 	}
 }
 

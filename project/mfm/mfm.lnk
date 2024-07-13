@@ -1,6 +1,5 @@
 -imu
 mfm
-mfm
 sp0_x
 print
 macros
@@ -23,7 +22,6 @@ debug
 ;   follow mondeb and xhelp in the linking order !!!
 ;
 ; Sequence (04_22_2020)
-mfm
 mfm
 sp0_x
 print

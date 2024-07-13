@@ -1,7 +1,7 @@
 /* lkarea.c */
 
 /*
- *  Copyright (C) 1989-2017  Alan R. Baldwin
+ *  Copyright (C) 1989-2022  Alan R. Baldwin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -124,7 +124,7 @@ newarea()
 	char opt[NCPS];
 
 	if (headp == NULL) {
-		fprintf(stderr, "No header defined\n");
+		fprintf(stderr, "?ASlink-Error-No header defined\n");
 		lkexit(ER_FATAL);
 	}
 	/*
@@ -162,7 +162,7 @@ newarea()
 				if (iflags) {
 			 		if (aflags & A4_OVR) {
 						if (iflags != (aflags & A4_OVR)) {
-							fprintf(stderr, "Conflicting CON/OVR flags in area %s\n", id);
+							fprintf(stderr, "?ASlink-Error-Conflicting CON/OVR flags in area %s\n", id);
 							lkerr++;
 						}
 					} else {
@@ -173,7 +173,7 @@ newarea()
 				if (iflags) {
 			 		if (aflags & A4_ABS) {
 						if (iflags != (aflags & A4_ABS)) {
-							fprintf(stderr, "Conflicting REL/ABS flags in area %s\n", id);
+							fprintf(stderr, "?ASlink-Error-Conflicting REL/ABS flags in area %s\n", id);
 							lkerr++;
 						}
 					} else {
@@ -184,7 +184,7 @@ newarea()
 				if (iflags) {
 			 		if (aflags & A4_PAG) {
 						if (iflags != (aflags & A4_PAG)) {
-							fprintf(stderr, "Conflicting NOPAG/PAG flags in area %s\n", id);
+							fprintf(stderr, "?ASlink-Error-Conflicting NOPAG/PAG flags in area %s\n", id);
 							lkerr++;
 						}
 					} else {
@@ -195,7 +195,7 @@ newarea()
 					iflags = (int) (i & (A4_DSEG | A4_WLMSK));
 				 	if (aflags & A4_DSEG) {
 						if (iflags != (aflags & (A4_DSEG | A4_WLMSK))) {
-							fprintf(stderr, "Conflicting CSEG/DSEG flags in area %s\n", id);
+							fprintf(stderr, "?ASlink-Error-Conflicting CSEG/DSEG flags in area %s\n", id);
 							lkerr++;
 						}
 					} else {
@@ -216,20 +216,20 @@ newarea()
 		if (symeq("bank", opt, 1)) {
 			hblp = hp->b_list;
 			if (hblp == NULL) {
-				fprintf(stderr, "No banks defined\n");
+				fprintf(stderr, "?ASlink-Error-No banks defined\n");
 				lkexit(ER_FATAL);
 			}
 			if (i >= (unsigned) hp->h_nbank) {
-				fprintf(stderr, "Invalid bank number\n");
+				fprintf(stderr, "?ASlink-Error-Invalid bank number\n");
 				lkexit(ER_FATAL);
 			}
 			if (hblp[(int) i] == NULL) {
-				fprintf(stderr, "Bank not defined\n");
+				fprintf(stderr, "?ASlink-Error-Bank not defined\n");
 				lkexit(ER_FATAL);
 			}
 			if (ap->a_bp != NULL) {
 				if (ap->a_bp != hblp[(int) i]) {
-					fprintf(stderr, "Multiple Bank assignments for area %s ( %s / %s )\n",
+					fprintf(stderr, "?ASlink-Error-Multiple Bank assignments for area %s ( %s / %s )\n",
 						id, ap->a_bp->b_id, hblp[(int) i]->b_id);
 					lkerr++;
 				}
@@ -260,7 +260,7 @@ newarea()
 			return;
 		}
 	}
-	fprintf(stderr, "Header area list overflow\n");
+	fprintf(stderr, "?ASlink-Error-Header area list overflow\n");
 	lkexit(ER_FATAL);
 }
 
@@ -430,49 +430,49 @@ lnkarea()
 
 	for (bp = bankp; bp != NULL; bp = bp->b_bp) {
 	
-	    rloc = 0;
-	    for (ap = areap; ap != NULL; ap = ap->a_ap) {
-		if (ap->a_bp != bp)
-			continue;
+		rloc = 0;
+		for (ap = areap; ap != NULL; ap = ap->a_ap) {
+			if (ap->a_bp != bp)
+				continue;
 
-		if ((ap->a_flag & A4_ABS) == A4_ABS) {
+			if ((ap->a_flag & A4_ABS) == A4_ABS) {
+				/*
+				 * Absolute sections
+				 */
+				lnksect(ap);
+			} else {
+				/*
+				 * Relocatable sections
+				 */
+				bytes = 1 + (ap->a_flag & A4_WLMSK);
+				if (ap->a_bset == 0)
+					ap->a_addr = (rloc/bytes) + ((rloc % bytes) ? 1 : 0);
+				lnksect(ap);
+				rloc = (ap->a_addr + ap->a_size) * bytes;
+			}
+
 			/*
-			 * Absolute sections
+			 * Create symbols called:
+			 *	a_<areaname>	the start address of the [a]rea
+			 *	l_<areaname>	the [l]ength of the area
 			 */
-			lnksect(ap);
-		} else {
-			/*
-			 * Relocatable sections
-			 */
-			bytes = 1 + (ap->a_flag & A4_WLMSK);
-			if (ap->a_bset == 0)
-				ap->a_addr = (rloc/bytes) + ((rloc % bytes) ? 1 : 0);
-			lnksect(ap);
-			rloc = (ap->a_addr + ap->a_size) * bytes;
+
+			if (! symeq(ap->a_id, _abs_, 1)) {
+        	                sprintf(temp, "a_%s", ap->a_id);
+				sp = lkpsym(temp, 1);
+				sp->s_addr = ap->a_addr;
+				sp->s_axp = NULL;
+				sp->s_type |= S_DEF;
+				sp->s_flag = m1flag ? 0 : 1;
+
+				sprintf(temp, "l_%s", ap->a_id);
+				sp = lkpsym(temp, 1);
+				sp->s_addr = ap->a_size;
+				sp->s_axp = NULL;
+				sp->s_type |= S_DEF;
+				sp->s_flag = m1flag ? 0 : 1;
+			}
 		}
-
-		/*
-		 * Create symbols called:
-		 *	a_<areaname>	the start address of the [a]rea
-		 *	l_<areaname>	the [l]ength of the area
-		 */
-
-		if (! symeq(ap->a_id, _abs_, 1)) {
-                        sprintf(temp, "a_%s", ap->a_id);
-			sp = lkpsym(temp, 1);
-			sp->s_addr = ap->a_addr;
-			sp->s_axp = NULL;
-			sp->s_type |= S_DEF;
-			sp->s_flag = m1flag ? 0 : 1;
-
-			sprintf(temp, "l_%s", ap->a_id);
-			sp = lkpsym(temp, 1);
-			sp->s_addr = ap->a_size;
-			sp->s_axp = NULL;
-			sp->s_type |= S_DEF;
-			sp->s_flag = m1flag ? 0 : 1;
-		}
-	    }
 	}
 }
 
@@ -508,7 +508,7 @@ lnkarea()
  *	side effects:
  *		All areax addresses and sizes are determined
  *		for a single area and linked into the structures.
- *		A symbol is created fro each areax entry.
+ *		A symbol is created for each areax entry.
  */
 
 VOID
@@ -524,10 +524,9 @@ struct area *tap;
 	size = 0;
 	addr = tap->a_addr;
 	if (((tap->a_flag & A4_PAG) == A4_PAG) && (addr & 0xFF)) {
-	    fprintf(stderr,
-		"\n?ASlink-Warning-Paged Area %s Boundary Error\n",
-		tap->a_id);
-	    lkerr++;
+		fprintf(stderr, "?ASlink-Error-Paged Area %s Boundary Error\n",
+			tap->a_id);
+		lkerr++;
 	}
 	for (taxp = tap->a_axp, i=1; taxp != NULL; taxp = taxp->a_axp, i++) {
 		if (taxp->a_bndry != 0) {
@@ -577,10 +576,9 @@ struct area *tap;
 	}
 	tap->a_size = size;
 	if (((tap->a_flag & A4_PAG) == A4_PAG) && (size > 256)) {
-	    fprintf(stderr,
-		"\n?ASlink-Warning-Paged Area %s Length Error\n",
-		tap->a_id);
-	    lkerr++;
+		fprintf(stderr, "?ASlink-Error-Paged Area %s Length Error\n",
+			tap->a_id);
+		lkerr++;
 	}
 }
 
@@ -600,10 +598,10 @@ struct area *tap;
  *				 	area structure
  *		area	*areap		The pointer to the first
  *				 	area structure of a linked list
- *		base	*basep		The pointer to the first
- *				 	base structure
- *		base	*bsp		Pointer to the current
- *				 	base structure
+ *		base	*a_basep	The pointer to the first
+ *				 	area base structure
+ *		base	*a_bsp		Pointer to the current
+ *				 	area base structure
  *		char	*ip		pointer into the REL file
  *				 	text line in ib[]
  *		int	lkerr		error flag
@@ -625,9 +623,9 @@ setarea()
 	a_uint v;
 	char id[NCPS];
 
-	bsp = basep;
-	while (bsp) {
-		ip = bsp->b_strp;
+	a_bsp = a_basep;
+	while (a_bsp) {
+		ip = a_bsp->strp;
 		getid(id, -1);
 		if (getnb() == '=') {
 			v = expr(0);
@@ -636,18 +634,17 @@ setarea()
 					break;
 			}
 			if (ap == NULL) {
-				fprintf(stderr,
-				"No definition of area %s\n", id);
+				fprintf(stderr,	"?ASlink-Error-No definition of area %s\n", id);
 				lkerr++;
 			} else {
 				ap->a_addr = v;
 				ap->a_bset = 1;
 			}
 		} else {
-			fprintf(stderr, "No '=' in base expression");
+			fprintf(stderr, "?ASlink-Error-No '=' in base expression");
 			lkerr++;
 		}
-		bsp = bsp->b_base;
+		a_bsp = a_bsp->link;
 	}
 }
 

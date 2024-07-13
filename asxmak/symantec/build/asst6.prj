@@ -4,7 +4,7 @@ asst6.OPN
 novcs
 asst6.DEF
 6
-1288054523
+1288058124
 0 0 0 0 0 "..\..\..\ASXXSRC\asdata.c"
 0 0 0 0 0 "..\..\..\ASXXSRC\asdbg.c"
 0 0 0 0 0 "..\..\..\ASXXSRC\asexpr.c"
@@ -25,3 +25,4 @@ asst6.DEF
 0 -1 0 0 0 "C:\SC\INCLUDE\stdio.h"
 0 -1 0 0 0 "C:\SC\INCLUDE\setjmp.h"
 0 -1 0 0 0 "C:\SC\INCLUDE\string.h"
+0 -1 0 0 0 "C:\SC\INCLUDE\time.h"

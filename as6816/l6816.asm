@@ -37,8 +37,6 @@
 	; arithmatic precision and the specific interpretation of
 	; values not in the full precision of the underlying arithmatic.
 
-	.xerr	3		; Expanded Errors
-
 	; External Definitions
 	;
 	; Normally INTENAL is not defined and all

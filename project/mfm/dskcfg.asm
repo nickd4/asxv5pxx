@@ -45,18 +45,18 @@
 ;
 	.macro	.stsrc	src$
 	  .ifnb	src$
-	    .list	(!,err,loc,bin,eqt,cyc,src,me,meb)
+	    .list	(!,err,loc,bin,eqt,cyc,lin,src,me,meb)
 	  mov	dptr,src$
 	    .nlist
 	  .endif
-	  .list	(!,err,loc,bin,eqt,cyc,src,me,meb)
+	  .list	(!,err,loc,bin,eqt,cyc,lin,src,me,meb)
 	  mov	r2,dph
 	  mov	r3,dpl
 	  .nlist
 	.endm
 
 	.macro	.ldsrc
-	  .list	(!,err,loc,bin,eqt,cyc,src,me,meb)
+	  .list	(!,err,loc,bin,eqt,cyc,lin,src,me,meb)
 	  mov	dph,r2
 	  mov	dpl,r3
 	  .nlist
@@ -68,18 +68,18 @@
 ;
 	.macro	.stdst	dst$
 	  .ifnb	dst$
-	    .list	(!,err,loc,bin,eqt,cyc,src,me,meb)
+	    .list	(!,err,loc,bin,eqt,cyc,lin,src,me,meb)
 	  mov	dptr,dst$
 	    .nlist
 	  .endif
-	  .list	(!,err,loc,bin,eqt,cyc,src,me,meb)
+	  .list	(!,err,loc,bin,eqt,cyc,lin,src,me,meb)
 	  mov	r4,dph
 	  mov	r5,dpl
 	  .nlist
 	.endm
 
 	.macro	.lddst
-	  .list	(!,err,loc,bin,eqt,cyc,src,me,meb)
+	  .list	(!,err,loc,bin,eqt,cyc,lin,src,me,meb)
 	  mov	dph,r4
 	  mov	dpl,r5
 	  .nlist
@@ -91,18 +91,18 @@
 ;
 	.macro	.stcnt	cnt$
 	  .ifnb	cnt$
-	    .list	(!,err,loc,bin,eqt,cyc,src,me,meb)
+	    .list	(!,err,loc,bin,eqt,cyc,lin,src,me,meb)
 	  mov	dptr,cnt$
 	    .nlist
 	  .endif
-	  .list	(!,err,loc,bin,eqt,cyc,src,me,meb)
+	  .list	(!,err,loc,bin,eqt,cyc,lin,src,me,meb)
 	  mov	r0,dph
 	  mov	r1,dpl
 	  .nlist
 	.endm
 
 	.macro	.ldcnt
-	  .list	(!,err,loc,bin,eqt,cyc,src,me,meb)
+	  .list	(!,err,loc,bin,eqt,cyc,lin,src,me,meb)
 	  mov	dph,r0
 	  mov	dpl,r1
 	  .nlist

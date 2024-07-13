@@ -1,7 +1,7 @@
 /* asxcnv.c */
 
 /*
- *  Copyright (C) 1989-2021  Alan R. Baldwin
+ *  Copyright (C) 1989-2023  Alan R. Baldwin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -29,6 +29,7 @@ int inpfil;		/* Input File Counter	*/
 int radix;		/* Radix Flag		*/
 int a_bytes;		/* Addressing Bytes	*/
 int aserr;		/* Error Counter	*/
+int nx;			/* Extra Cycle Digits	*/
 
 FILE *nfp;		/* Input File Handle	*/
 FILE *dfp;		/* Output File Handle	*/
@@ -114,6 +115,7 @@ char *argv[];
 	a_bytes = 2;
 	inpfil = 0;
 	aserr = 0;
+	nx = 0;
 
 	fprintf(stdout, "\n");
 
@@ -137,6 +139,16 @@ char *argv[];
 				case 'q':
 				case 'Q':
 					radix = 8;
+					break;
+
+				case 'n':
+				case 'N':
+					switch(*p++) {
+					case '2':	nx = 0;	break;
+					case '3':	nx = 1;	break;
+					case '4':	nx = 2; break;
+					default:	--p;	break;
+					}
 					break;
 
 				case '2':
@@ -192,9 +204,9 @@ loop:
 
 		switch(a_bytes) {
 		default:
-		case 2: ldgt = 25; lnum=26; lcon = 32; break;
+		case 2: ldgt = 25; lnum=26 + nx; lcon = 32 + nx; break;
 		case 3:
-		case 4: ldgt = 33; lnum=34; lcon = 40; break;
+		case 4: ldgt = 33; lnum=34 + nx; lcon = 40 + nx; break;
 		}
 
 		/* The Output Formats
@@ -277,7 +289,7 @@ loop:
 		 * ldgt	  Last Data Digit in Line
 		 * m	  Number of bytes per line
 		 */
-		if ((scline[ldgt-3] == CYCNT_BGN) && (scline[ldgt] == CYCNT_END)) {
+		if ((scline[ldgt-3] == CYCNT_BGN) && (scline[ldgt + nx] == CYCNT_END)) {
 			switch(rdx) {
 			default:
 			case RAD16:
@@ -375,7 +387,7 @@ loop:
 			r = strchr(s, ';');
 			if (r != NULL) {
 				*r = '\0';
-				while( --r >= s && *r == SPACE) {
+				while( --r >= s && ((*r == SPACE) || (*r == '\t'))) {
 					*r = '\0';
 				}
 			}
@@ -396,11 +408,26 @@ loop:
 			 * Extend line to at least 32 characters
 			 * before appending data.
 			 */
+#if 1
+			if (pos <= 39) {
+				while (pos < 40) {
+					strcat(scline,"\t");
+					pos += 8;
+					pos = 8 * (pos/8);
+				}
+			} else {
+				strcat(scline,"\t");
+				if ((pos % 8) > 6) {
+					strcat(scline,"\t");
+				}
+			}
+#else
 			while (pos < 32) {
 				strcat(scline,"\t");
 				pos += 8;
 				pos = 8 * (pos/8);
 			}
+#endif
 
 			/*
 			 * Append assembler generated data to
@@ -508,6 +535,7 @@ char *usetxt[] = {
         "  2    16-Bit  address (default)",
 	"  3    24-Bit  address",
 	"  4    32-Bit  address",
+	"  n#   cycle digits (2-4) (default = 2)",
 	"",
 	NULL
 };

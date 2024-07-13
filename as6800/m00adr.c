@@ -65,6 +65,7 @@ struct expr *esp;
 			;
 		} else {
 			expr(esp, 0);
+			esp->e_mode = S_EXT;
 			if (more()) {
 				comma(1);
 				esp->e_mode = S_INDX;
@@ -72,16 +73,20 @@ struct expr *esp;
 					xerr('a', "Register A, B, or X required.");
 			} else {
 				if ((!esp->e_flag)
-					&& (esp->e_base.e_ap==NULL)
+					&& (esp->e_base.e_ap == NULL)
 					&& !(esp->e_addr & ~0xFF)) {
 					esp->e_mode = S_DIR;
 				} else {
-					if ((!esp->e_flag)
-						&& (zpg != NULL)
-						&& (esp->e_base.e_ap==zpg)) {
-						esp->e_mode = S_DIR;
-					} else {
-						esp->e_mode = S_EXT;
+					if (zpg != NULL) {
+						if (esp->e_flag) {
+							if (esp->e_base.e_sp->s_area == zpg) {
+								esp->e_mode = S_DIR;	/* ___  (*)arg */
+							}
+						} else {
+							if (esp->e_base.e_ap == zpg) {
+								esp->e_mode = S_DIR;	/* ___  (*)arg */
+							}
+						}
 					}
 				}
 			}

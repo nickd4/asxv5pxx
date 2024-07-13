@@ -1,7 +1,7 @@
 /* gbadr.c */
 
 /*
- *  Copyright (C) 1989-2021  Alan R. Baldwin
+ *  Copyright (C) 1989-2022  Alan R. Baldwin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -74,14 +74,19 @@ struct expr *esp;
 		if ((indx = admode(R16X)) != 0) {
 			mode = S_R16X;
 			aerr();
+		} else
+		if ((c = getnb()) == '*') {
+			mode = S_IDIR;
+			expr(esp, 0);
+			esp->e_mode = mode;
 		} else {
+			unget(c);
 			mode = S_INDM;
 			expr(esp, 0);
 			esp->e_mode = mode;
 		}
 		if (indx) {
 			esp->e_mode = mode + (indx & 0xFF);
-			esp->e_base.e_ap = NULL;
 		}
 		if ((c = getnb()) != RTIND)
 			xerr('q', "Missing ')'.");
@@ -95,15 +100,19 @@ struct expr *esp;
 		} else	
 		if ((indx = admode(R16X)) != 0) {
 			mode = S_R16X;
+		} else
+		if ((c = getnb()) == '*') {
+			expr(esp, 0);
+			esp->e_mode = S_DIR;
 		} else {
-			mode = S_USER;
+			unget(c);
+			mode = S_EXT;
 			expr(esp, 0);
 			esp->e_mode = mode;
 		}
 		if (indx) {
 			esp->e_addr = indx & 0xFF;
 			esp->e_mode = mode;
-			esp->e_base.e_ap = NULL;
 		}
 	}
 	return (esp->e_mode);
@@ -198,18 +207,19 @@ struct	adsym	R8[] = {
 };
 
 struct	adsym	R16[] = {
+    {   "hl-",  HLD|0400},
+    {	"hld",	HLD|0400},
+    {   "hl+",  HLI|0400},
+    {	"hli",	HLI|0400},
     {	"bc",	BC|0400	},
     {	"de",	DE|0400	},
     {	"hl",	HL|0400	},
     {	"sp",	SP|0400	},
-    {	"hld",	HLD|0400},
-    {	"hli",	HLI|0400},
     {	"",	0000	}
 };
 
 struct	adsym	R16X[] = {
     {	"af",	AF|0400	},
-    {	"af'",	AF|0400	},
     {	"",	0000	}
 };
 

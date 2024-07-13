@@ -35,8 +35,8 @@ char	*dsft	= "asm";
 #define	OPCY_DEF	((char) (0xFE))
 #define	OPCY_ERR	((char) (0xFD))
 
-/*	OPCY_NONE	((char) (0x80))	*/
-/*	OPCY_MASK	((char) (0x7F))	*/
+#define	OPCY_NONE	((char) (0x80))
+#define	OPCY_MASK	((char) (0x7F))
 
 struct	xdef	xfield[16];
 int d_xtnd;
@@ -73,6 +73,12 @@ struct mne *mp;
 	int c;
 	char *ips;
 	struct sym *sp,*vp;
+
+	/*
+	 * Using Internal Format
+	 * For Cycle Counting
+	 */
+	opcycles = OPCY_NONE;
 
 	clrexpr(&e1);	clrexpr(&n1);	clrexpr(&x1);
 	m1 = v1 = 0;
@@ -348,7 +354,7 @@ struct mne *mp;
 			if (m2 & A_RIV) {
 				code = 0x1F00;
 			} else
-			if ((v2 == 0x07) | (v2 = 0x0F)) {
+			if ((v2 == 0x07) | (v2 == 0x0F)) {
 				code = v2 << 8;
 			   	if (m1 & (A_LIV | A_RIV)) {
 					outrwm(&e1, R_VO8, op|code);
@@ -705,6 +711,11 @@ struct mne *mp;
 	if (opcycles == OPCY_NONE) {
 		opcycles = 1;
 	}
+ 	/*
+	 * Translate To External Format
+	 */
+	if (opcycles == OPCY_NONE) { opcycles  =  CYCL_NONE; } else
+	if (opcycles  & OPCY_NONE) { opcycles |= (CYCL_NONE | 0x3F00); }
 }
 
 int

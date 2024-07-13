@@ -181,18 +181,16 @@ struct expr *esp;
 		esp->e_mode = S_CREG;
 	} else {
 		expr(esp, 0);
+		esp->e_mode = S_EXT;
 		if ((!esp->e_flag)
 		    && (esp->e_base.e_ap == NULL)
 		    && ((esp->e_addr & 0xFF00) == 0xFF00)) {
 			esp->e_mode = S_DIR;
 		}
 		if ((!esp->e_flag)
-			&& (zpg != NULL)
-			&& (esp->e_base.e_ap == zpg)) {
+		    && (zpg != NULL)
+		    && (esp->e_base.e_ap == zpg)) {
 			esp->e_mode = S_DIR;
-		}
-		if (esp->e_mode != S_DIR) {
-			esp->e_mode = S_EXT;
 		}
 	}
 	return (esp->e_mode);

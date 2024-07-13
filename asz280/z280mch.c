@@ -1,7 +1,7 @@
 /* z280mch.c */
 
 /*
- *  Copyright (C) 1989-2014  Alan R. Baldwin
+ *  Copyright (C) 1989-2023  Alan R. Baldwin
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -39,6 +39,9 @@ char	*dsft	= "asm";
 
 a_uint	mchtyp;	/* ARB */
 a_uint	debug;	/* ARB */
+
+#define	OPCY_NONE	((char) (0x80))
+#define	OPCY_MASK	((char) (0x7F))
 
 #define	UN	((char) (OPCY_NONE | 0x00))
 #define	P2	((char) (OPCY_NONE | 0x01))
@@ -422,10 +425,16 @@ struct mne *mp;
 {
 	char **popcy[7];
 	
+	/*
+	 * Using Internal Format
+	 * For Cycle Counting
+	 */
+	opcycles = OPCY_NONE;
+
 /*	*popcy = z80Page;	*/
 	
 	if (!new_machine(mp)) {
-		opcycles = OPCY_ERR;
+		opcycles = CYCL_NONE | 0x3F00 | OPCY_ERR;
 		qerr();
 		return;
 	}
@@ -456,6 +465,11 @@ struct mne *mp;
 			}
 		}
 	}
+	/*
+	 * Translate To External Format
+	 */
+	if (opcycles == OPCY_NONE) { opcycles  =  CYCL_NONE; } else
+	if (opcycles  & OPCY_NONE) { opcycles |= (CYCL_NONE | 0x3F00); }
 }
 
 
@@ -622,8 +636,7 @@ int byt;
 	
 	case nREL8:
 	case nREL16:
-		if (mchpcr(arg)) {
-			tmp = (int)(arg->e_addr - dot.s_addr);
+		if (mchpcr(arg, &tmp, 0)) {
 			if (op == nREL16) {
 /* byt is normally zero; but may be set to allow for extra bytes between displacement and end of instruction */
 				tmp -= (byt + 2);
@@ -773,10 +786,28 @@ a_uint mask;
  * Branch/Jump PCR Mode Check
  */
 int
-mchpcr(esp)
+mchpcr(esp, v, n)
 struct expr *esp;
+int *v;
+int n;
 {
 	if (esp->e_base.e_ap == dot.s_area) {
+		if (v != NULL) {
+#if 1
+			/* Allows branching from top-to-bottom and bottom-to-top */
+ 			*v = (int) (esp->e_addr - dot.s_addr - n);
+			/* only bits 'a_mask' are significant, make circular */
+			if (*v & s_mask) {
+				*v |= (int) ~a_mask;
+			}
+			else {
+				*v &= (int) a_mask;
+			}
+#else
+			/* Disallows branching from top-to-bottom and bottom-to-top */
+			*v = (int) ((esp->e_addr & a_mask) - (dot.s_addr & a_mask) - n);
+#endif
+		}
 		return(1);
 	}
 	if (esp->e_flag==0 && esp->e_base.e_ap==NULL) {
@@ -793,8 +824,6 @@ struct expr *esp;
 	}
 	return(0);
 }
-
-
 
 /*
  * Machine dependent initialization
